@@ -1,0 +1,25 @@
+name: Pipeline Pling
+description: Post GitHub push commit notifications to Discord using Components V2
+branding:
+  icon: bell
+  color: yellow
+
+inputs:
+  webhook-url:
+    description: Discord webhook URL
+    required: true
+  thread-id:
+    description: Optional Discord forum thread ID to post into
+    required: false
+  skip-bots:
+    description: Skip notifications when the push sender is a bot
+    required: false
+    default: 'true'
+  anon-keyword:
+    description: Commit message keyword that marks a commit as anonymous in Discord output
+    required: false
+    default: '!anon'
+
+runs:
+  using: node24
+  main: dist/index.js
