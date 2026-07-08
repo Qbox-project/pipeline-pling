@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildDiscordMessage,
+  buildBranchUrl,
   formatCommitAttribution,
   formatCommitTitle,
   formatGitHubUser,
@@ -102,6 +103,17 @@ describe('parseBranch', () => {
   });
 });
 
+describe('buildBranchUrl', () => {
+  it('links to the repository branch tree view', () => {
+    expect(buildBranchUrl('https://github.com/Qbox-project/txAdminRecipe', 'main')).toBe(
+      'https://github.com/Qbox-project/txAdminRecipe/tree/main',
+    );
+    expect(
+      buildBranchUrl('https://github.com/Qbox-project/qbx_core/', 'feature/foo'),
+    ).toBe('https://github.com/Qbox-project/qbx_core/tree/feature/foo');
+  });
+});
+
 describe('resolveUsername', () => {
   it('uses explicit username when present', () => {
     expect(resolveUsername({ name: 'Trevor', email: 'x@y.com', username: 'trevor' })).toBe(
@@ -144,7 +156,7 @@ describe('formatCommitAttribution', () => {
         },
         [],
       ),
-    ).toBe('[ChatDisabled](https://github.com/ChatDisabled)');
+    ).toBe('*by* [ChatDisabled](https://github.com/ChatDisabled)');
   });
 
   it('joins author and a single co-author with ampersand', () => {
@@ -163,7 +175,7 @@ describe('formatCommitAttribution', () => {
         ],
       ),
     ).toBe(
-      '[Whereiam](https://github.com/WhereiamL) & [ChatDisabled](https://github.com/ChatDisabled)',
+      '*by* [Whereiam](https://github.com/WhereiamL) & [ChatDisabled](https://github.com/ChatDisabled)',
     );
   });
 
@@ -187,7 +199,7 @@ describe('formatCommitAttribution', () => {
         ],
       ),
     ).toBe(
-      '[Whereiam](https://github.com/WhereiamL) & [ChatDisabled](https://github.com/ChatDisabled), [Jane Doe](https://github.com/janedoe)',
+      '*by* [Whereiam](https://github.com/WhereiamL) & [ChatDisabled](https://github.com/ChatDisabled), [Jane Doe](https://github.com/janedoe)',
     );
   });
 });
@@ -279,9 +291,10 @@ describe('buildDiscordMessage', () => {
   it('uses sender.login as the actor in the header', () => {
     const header = getHeaderContent(buildDiscordMessage(makePayload()));
 
-    expect(header).toContain('[@ChatDisabled](https://github.com/ChatDisabled)');
+    expect(header).toContain('[ChatDisabled](https://github.com/ChatDisabled)');
+    expect(header).not.toContain('[@ChatDisabled]');
     expect(header).toContain(
-      '[`Qbox-project/txAdminRecipe/main`](https://github.com/Qbox-project/txAdminRecipe/compare/50f87dc...9d369b1)',
+      '[`Qbox-project/txAdminRecipe/main`](https://github.com/Qbox-project/txAdminRecipe/tree/main)',
     );
     expect(header).not.toContain('44729807+ChatDisabled@users.noreply.github.com');
   });
@@ -346,6 +359,10 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
     expect(commitContent).toContain(
       'fix(bridge/qb): correct vehicle prop/colour mapping, 12h clock...',
     );
+    expect(commitContent).toMatch(
+      /\n\*by\* \[Whereiam\]\(https:\/\/github\.com\/WhereiamL\) & \[ChatDisabled\]\(https:\/\/github\.com\/ChatDisabled\)/,
+    );
+    expect(commitContent).not.toContain(' — [Whereiam]');
     expect(commitContent).toContain(
       '> * fix(bridge/qb): correct vehicle prop/colour mapping, 12h clock and Kick loop',
     );
@@ -353,9 +370,6 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
       '> - modSubwoofer fell back to modKit17 (nitrous) instead of modKit19',
     );
     expect(commitContent).not.toContain('Co-authored-by:');
-    expect(commitContent).toContain(
-      '[Whereiam](https://github.com/WhereiamL) & [ChatDisabled](https://github.com/ChatDisabled)',
-    );
     expect(commitContent).not.toContain('co-authored with');
     expect(commitContent).not.toContain('committed by');
     expect(commitContent).not.toContain('[GitHub](https://github.com/web-flow)');
@@ -427,7 +441,7 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
     const commitContent = getCommitContent(message);
     const serialized = JSON.stringify(message);
 
-    expect(header).toContain('[@ChatDisabled](https://github.com/ChatDisabled)');
+    expect(header).toContain('[ChatDisabled](https://github.com/ChatDisabled)');
     expect(header).toContain('`Qbox-project/txAdminRecipe/main`');
     expect(header).not.toContain(compareUrl);
     expect(commitContent).toContain('`Anonymous commit`');
@@ -458,7 +472,7 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
       buildDiscordMessage(makePayload({ commits }), { maxCommits: 10 }),
     );
 
-    expect(commitContent.split('\n')).toHaveLength(11);
+    expect((commitContent.match(/\*by\*/g) ?? []).length).toBe(10);
     expect(commitContent).toContain('+ 2 more...');
   });
 });

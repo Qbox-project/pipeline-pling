@@ -21,10 +21,17 @@ const GITHUB_AVATAR_SIZE = 256;
 const CO_AUTHOR_REGEX = /^Co-authored-by:\s*(.+?)\s*<([^>]+)>\s*$/gim;
 const NOREPLY_EMAIL_REGEX = /^(?:\d+\+)?([^@]+)@users\.noreply\.github\.com$/i;
 const PR_REF_REGEX = /\(#(\d+)\)/g;
+const COMMIT_BLOCK_SEPARATOR = '\n\n';
 
 export function parseBranch(ref: string): string {
   const prefix = 'refs/heads/';
   return ref.startsWith(prefix) ? ref.slice(prefix.length) : ref;
+}
+
+export function buildBranchUrl(repoHtmlUrl: string, branch: string): string {
+  const repoUrl = repoHtmlUrl.replace(/\/$/, '');
+  const encodedBranch = branch.split('/').map(encodeURIComponent).join('/');
+  return `${repoUrl}/tree/${encodedBranch}`;
 }
 
 export function resolveUsername(user: GitHubUser): string | undefined {
@@ -149,21 +156,19 @@ export function formatCommitAttribution(
   coAuthors: ParsedCoAuthor[],
 ): string {
   const authorText = formatGitHubUser(author);
+  const peopleText =
+    coAuthors.length === 0
+      ? authorText
+      : `${authorText} & ${coAuthors
+          .map((coAuthor) =>
+            formatGitHubUser({
+              name: coAuthor.name,
+              email: coAuthor.email,
+            }),
+          )
+          .join(', ')}`;
 
-  if (coAuthors.length === 0) {
-    return authorText;
-  }
-
-  const coAuthorText = coAuthors
-    .map((coAuthor) =>
-      formatGitHubUser({
-        name: coAuthor.name,
-        email: coAuthor.email,
-      }),
-    )
-    .join(', ');
-
-  return `${authorText} & ${coAuthorText}`;
+  return `*by* ${peopleText}`;
 }
 
 function formatCommitDescription(message: string, maxDescriptionLength: number): string {
@@ -207,7 +212,7 @@ function formatCommitLine(
     maxDescriptionLength,
   );
 
-  return `[\`${shortSha}\`](${commit.url}) ${title} — ${attributionText}${descriptionText}`;
+  return `[\`${shortSha}\`](${commit.url}) ${title}\n${attributionText}${descriptionText}`;
 }
 
 function buildHeader(
@@ -218,9 +223,10 @@ function buildHeader(
   hasAnonymous: boolean,
 ): string {
   const repo = payload.repository.full_name;
+  const branchUrl = buildBranchUrl(payload.repository.html_url, branch);
   const branchLabel = hasAnonymous
     ? `\`${repo}/${branch}\``
-    : `[\`${repo}/${branch}\`](${payload.compare})`;
+    : `[\`${repo}/${branch}\`](${branchUrl})`;
   const commitLabel = commitCount === 1 ? 'commit' : 'commits';
 
   if (allAnonymous) {
@@ -228,7 +234,7 @@ function buildHeader(
   }
 
   const actor = payload.sender.login;
-  return `**[@${actor}](https://github.com/${actor})** is pushing ${commitCount} ${commitLabel} to ${branchLabel}`;
+  return `**[${actor}](https://github.com/${actor})** is pushing ${commitCount} ${commitLabel} to ${branchLabel}`;
 }
 
 function withGitHubAvatarSize(avatarUrl: string): string {
@@ -315,7 +321,7 @@ function trimLinesToMaxLength(lines: string[], maxTextLength: number): string[] 
   let totalLength = 0;
 
   for (const line of lines) {
-    const separatorLength = result.length > 0 ? 1 : 0;
+    const separatorLength = result.length > 0 ? COMMIT_BLOCK_SEPARATOR.length : 0;
     if (totalLength + separatorLength + line.length > maxTextLength) {
       const remaining = lines.length - result.length;
       if (remaining > 0) {
@@ -366,7 +372,9 @@ export function buildDiscordMessage(
     maxDescriptionLength,
     payload.repository.html_url,
   );
-  const commitContent = trimLinesToMaxLength(lines, maxTextLength).join('\n');
+  const commitContent = trimLinesToMaxLength(lines, maxTextLength).join(
+    COMMIT_BLOCK_SEPARATOR,
+  );
 
   const containerComponents: DiscordComponentsMessage['components'][0]['components'] =
     [
