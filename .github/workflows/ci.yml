@@ -23,7 +23,3 @@ jobs:
       - run: npm test
 
       - run: npm run build
-
-      - name: Verify dist is up to date
-        run: |
-          git diff --exit-code dist/index.js

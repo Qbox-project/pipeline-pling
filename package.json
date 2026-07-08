@@ -5,7 +5,7 @@
   "description": "Post GitHub push commit notifications to Discord using Components V2",
   "license": "MIT",
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --platform=node --target=node24 --outfile=dist/index.js --format=cjs",
+    "build": "esbuild src/main.ts --bundle --platform=node --target=node24 --outfile=dist/index.js --format=cjs --minify",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

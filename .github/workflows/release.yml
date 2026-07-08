@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run check
+
+      - name: Commit dist to release tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f dist/index.js
+          git commit -m "build: add dist for ${RELEASE_TAG}"
+          git tag -f "$RELEASE_TAG"
+          git push origin "$RELEASE_TAG" --force
+
+          if [[ "$RELEASE_TAG" =~ ^v[0-9] ]]; then
+            MAJOR_TAG="${RELEASE_TAG%%.*}"
+            git tag -f "$MAJOR_TAG"
+            git push origin "$MAJOR_TAG" --force
+          fi
