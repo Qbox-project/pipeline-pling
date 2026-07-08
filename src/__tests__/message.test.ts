@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { colorFromRepoName } from '../color.js';
 import {
   buildDiscordMessage,
   buildBranchUrl,
@@ -236,7 +237,9 @@ describe('buildDiscordMessage', () => {
     expect(message.allowed_mentions).toEqual({ parse: [] });
     expect(message.components).toHaveLength(1);
     expect(message.components[0].type).toBe(17);
-    expect(message.components[0].accent_color).toBe(0xf1e542);
+    expect(message.components[0].accent_color).toBe(
+      colorFromRepoName('Qbox-project/txAdminRecipe'),
+    );
     expect(message.components[0].components[0].type).toBe(10);
   });
 

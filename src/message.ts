@@ -5,8 +5,8 @@ import type {
   PushCommit,
   PushPayload,
 } from './types.js';
+import { colorFromRepoName } from './color.js';
 import {
-  ACCENT_COLOR,
   ANONYMOUS_AVATAR_URL,
   IS_COMPONENTS_V2,
 } from './types.js';
@@ -417,7 +417,7 @@ export function buildDiscordMessage(
     components: [
       {
         type: 17,
-        accent_color: ACCENT_COLOR,
+        accent_color: colorFromRepoName(payload.repository.full_name),
         components: containerComponents,
       },
     ],
