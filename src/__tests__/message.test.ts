@@ -694,6 +694,53 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
 
     expect(message.avatar_url).toBeUndefined();
   });
+
+  it('budgets header length into the total Components V2 text limit', () => {
+    const longTitle = 'x'.repeat(500);
+    const commits = Array.from({ length: 20 }, (_, index) =>
+      makeCommit({
+        id: `${index.toString().padStart(40, '0')}`,
+        message: `${longTitle} ${index}`,
+      }),
+    );
+
+    const message = buildDiscordMessage(makePayload({ commits }), {
+      maxTextLength: 4000,
+      maxCommits: 20,
+    });
+    const header = getHeaderContent(message);
+    const commitContent = getCommitContent(message);
+    const totalTextLength = header.length + commitContent.length;
+
+    expect(totalTextLength).toBeLessThanOrEqual(4000);
+    expect(commitContent).toContain('+ ');
+    expect(commitContent).toMatch(/\+ \d+ more\.\.\.$/);
+  });
+
+  it('drops trailing commit lines so the truncation notice fits the text budget', () => {
+    const title = 'y'.repeat(40);
+    const commits = Array.from({ length: 5 }, (_, index) =>
+      makeCommit({
+        id: `${index.toString().padStart(40, '0')}`,
+        message: `${title} ${index}`,
+      }),
+    );
+
+    const maxTextLength = 538;
+    const message = buildDiscordMessage(makePayload({ commits }), {
+      maxTextLength,
+      maxCommits: 5,
+    });
+    const header = getHeaderContent(message);
+    const commitContent = getCommitContent(message);
+    const commitBlocks = commitContent.split('\n\n');
+    const displayedCommits = commitBlocks.filter((block) => !block.startsWith('+ '));
+
+    expect(header.length + commitContent.length).toBeLessThanOrEqual(maxTextLength);
+    expect(commitContent).toMatch(/\+ \d+ more\.\.\.$/);
+    expect(displayedCommits.length).toBeLessThan(commits.length);
+    expect(displayedCommits.length).toBeGreaterThan(0);
+  });
 });
 
 describe('shouldSkipPush', () => {

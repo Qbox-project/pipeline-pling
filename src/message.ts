@@ -397,15 +397,42 @@ function trimLinesToMaxLength(lines: string[], maxTextLength: number): string[] 
   for (const line of lines) {
     const separatorLength = result.length > 0 ? COMMIT_BLOCK_SEPARATOR.length : 0;
     if (totalLength + separatorLength + line.length > maxTextLength) {
-      const remaining = lines.length - result.length;
-      if (remaining > 0) {
-        result.push(`+ ${remaining} more...`);
-      }
       break;
     }
 
     totalLength += separatorLength + line.length;
     result.push(line);
+  }
+
+  if (result.length === lines.length) {
+    return result;
+  }
+
+  while (true) {
+    const remaining = lines.length - result.length;
+    if (remaining <= 0) {
+      break;
+    }
+
+    const notice = `+ ${remaining} more...`;
+    const separatorLength = result.length > 0 ? COMMIT_BLOCK_SEPARATOR.length : 0;
+
+    if (totalLength + separatorLength + notice.length <= maxTextLength) {
+      result.push(notice);
+      break;
+    }
+
+    if (result.length === 0) {
+      result.push(notice);
+      break;
+    }
+
+    const popped = result.pop()!;
+    if (result.length === 0) {
+      totalLength = 0;
+    } else {
+      totalLength -= COMMIT_BLOCK_SEPARATOR.length + popped.length;
+    }
   }
 
   return result;
@@ -455,7 +482,8 @@ export function buildDiscordMessage(
     maxDescriptionLength,
     payload.repository.html_url,
   );
-  const commitContent = trimLinesToMaxLength(lines, maxTextLength).join(
+  const commitTextBudget = Math.max(0, maxTextLength - header.length);
+  const commitContent = trimLinesToMaxLength(lines, commitTextBudget).join(
     COMMIT_BLOCK_SEPARATOR,
   );
 
