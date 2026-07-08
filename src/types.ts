@@ -18,8 +18,13 @@ export interface PushPayload {
   compare: string;
   commits: PushCommit[];
   repository: {
+    name?: string;
     full_name: string;
     html_url: string;
+    owner?: {
+      login?: string;
+      avatar_url?: string;
+    };
   };
   sender: {
     login: string;
@@ -32,25 +37,9 @@ export interface PushPayload {
   };
 }
 
-export interface UnfurledMediaItem {
-  url: string;
-}
-
 export interface TextDisplayComponent {
   type: 10;
   content: string;
-}
-
-export interface ThumbnailComponent {
-  type: 11;
-  media: UnfurledMediaItem;
-  description?: string;
-}
-
-export interface SectionComponent {
-  type: 9;
-  components: TextDisplayComponent[];
-  accessory: ThumbnailComponent;
 }
 
 export interface SeparatorComponent {
@@ -74,12 +63,12 @@ export interface ActionRowComponent {
 export interface ContainerComponent {
   type: 17;
   accent_color?: number;
-  components: Array<
-    SectionComponent | SeparatorComponent | TextDisplayComponent | ActionRowComponent
-  >;
+  components: Array<SeparatorComponent | TextDisplayComponent | ActionRowComponent>;
 }
 
 export interface DiscordComponentsMessage {
+  username?: string;
+  avatar_url?: string;
   flags: number;
   allowed_mentions: {
     parse: [];
@@ -92,9 +81,10 @@ export interface BuildMessageOptions {
   maxCommits?: number;
   maxTextLength?: number;
   maxTitleLength?: number;
+  maxDescriptionLength?: number;
 }
 
 export const IS_COMPONENTS_V2 = 1 << 15;
 export const ACCENT_COLOR = 0xf1e542;
 export const ANONYMOUS_AVATAR_URL =
-  'https://avatars.githubusercontent.com/u/0?s=64&v=4';
+  'https://avatars.githubusercontent.com/u/0?s=256&v=4';

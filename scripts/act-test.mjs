@@ -11,6 +11,7 @@ const workflowFile = join(rootDir, ".github", "workflows", "discord-push.yml");
 const fixtures = [
   { label: "push", path: join(rootDir, "fixtures", "push.json") },
   { label: "push-anon", path: join(rootDir, "fixtures", "push-anon.json") },
+  { label: "push-coauthors", path: join(rootDir, "fixtures", "push-coauthors.json") },
 ];
 
 function fail(message) {

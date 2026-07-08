@@ -15,6 +15,9 @@ const DEFAULT_ANON_KEYWORD = '!anon';
 const DEFAULT_MAX_COMMITS = 10;
 const DEFAULT_MAX_TEXT_LENGTH = 4000;
 const DEFAULT_MAX_TITLE_LENGTH = 72;
+const DEFAULT_MAX_DESCRIPTION_LENGTH = 320;
+const DISCORD_WEBHOOK_USERNAME_MAX_LENGTH = 80;
+const GITHUB_AVATAR_SIZE = 256;
 const CO_AUTHOR_REGEX = /^Co-authored-by:\s*(.+?)\s*<([^>]+)>\s*$/gim;
 const NOREPLY_EMAIL_REGEX = /^(?:\d+\+)?([^@]+)@users\.noreply\.github\.com$/i;
 
@@ -81,6 +84,22 @@ export function getCommitTitle(message: string): string {
   return firstLine;
 }
 
+export function getCommitDescription(message: string): string {
+  const body = message.split(/\r?\n/).slice(1).join('\n').trim();
+  if (!body) {
+    return '';
+  }
+
+  return body
+    .replace(CO_AUTHOR_REGEX, '')
+    .replace(/^-{5,}\s*$/gim, '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join('\n')
+    .trim();
+}
+
 export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
     return text;
@@ -93,29 +112,40 @@ export function isAnonymousCommit(message: string, anonKeyword: string): boolean
   return message.includes(anonKeyword);
 }
 
-function formatCoAuthors(coAuthors: ParsedCoAuthor[]): string {
+export function formatCommitAttribution(
+  author: GitHubUser,
+  coAuthors: ParsedCoAuthor[],
+): string {
+  const authorText = formatGitHubUser(author);
+
   if (coAuthors.length === 0) {
+    return authorText;
+  }
+
+  const coAuthorText = coAuthors
+    .map((coAuthor) =>
+      formatGitHubUser({
+        name: coAuthor.name,
+        email: coAuthor.email,
+      }),
+    )
+    .join(', ');
+
+  return `${authorText} & ${coAuthorText}`;
+}
+
+function formatCommitDescription(message: string, maxDescriptionLength: number): string {
+  const description = truncate(getCommitDescription(message), maxDescriptionLength);
+  if (!description) {
     return '';
   }
 
-  const formatted = coAuthors.map((coAuthor) =>
-    formatGitHubUser({
-      name: coAuthor.name,
-      email: coAuthor.email,
-    }),
-  );
+  const quoted = description
+    .split(/\r?\n/)
+    .map((line) => `> ${line}`)
+    .join('\n');
 
-  if (formatted.length === 1) {
-    return `, co-authored with ${formatted[0]}`;
-  }
-
-  const last = formatted.at(-1);
-  const rest = formatted.slice(0, -1).join(', ');
-  return `, co-authored with ${rest}, and ${last}`;
-}
-
-function formatCommitter(committer: GitHubUser): string {
-  return ` (committed by ${formatGitHubUser(committer)})`;
+  return `\n${quoted}`;
 }
 
 function formatCommitLine(
@@ -123,6 +153,7 @@ function formatCommitLine(
   anonKeyword: string,
   anonymousIndex: number | undefined,
   maxTitleLength: number,
+  maxDescriptionLength: number,
 ): string {
   if (isAnonymousCommit(commit.message, anonKeyword)) {
     if (anonymousIndex === 1) {
@@ -134,13 +165,16 @@ function formatCommitLine(
 
   const shortSha = commit.id.slice(0, 7);
   const title = truncate(getCommitTitle(commit.message), maxTitleLength);
-  const authorText = formatGitHubUser(commit.author);
-  const coAuthorText = formatCoAuthors(parseCoAuthors(commit.message));
-  const committerText = isMeaningfullyDifferent(commit.author, commit.committer)
-    ? formatCommitter(commit.committer)
-    : '';
+  const attributionText = formatCommitAttribution(
+    commit.author,
+    parseCoAuthors(commit.message),
+  );
+  const descriptionText = formatCommitDescription(
+    commit.message,
+    maxDescriptionLength,
+  );
 
-  return `[\`${shortSha}\`](${commit.url}) — ${title} — ${authorText}${coAuthorText}${committerText}`;
+  return `[\`${shortSha}\`](${commit.url}) ${title} — ${attributionText}${descriptionText}`;
 }
 
 function buildHeader(
@@ -164,15 +198,46 @@ function buildHeader(
   return `**[@${actor}](https://github.com/${actor})** is pushing ${commitCount} ${commitLabel} to ${branchLabel}`;
 }
 
-function buildAvatarUrl(payload: PushPayload, allAnonymous: boolean): string {
+function withGitHubAvatarSize(avatarUrl: string): string {
+  try {
+    const url = new URL(avatarUrl);
+    if (url.hostname === 'avatars.githubusercontent.com') {
+      url.searchParams.set('s', String(GITHUB_AVATAR_SIZE));
+      return url.toString();
+    }
+
+    if (url.hostname === 'github.com' && url.pathname.endsWith('.png')) {
+      url.searchParams.set('size', String(GITHUB_AVATAR_SIZE));
+      return url.toString();
+    }
+  } catch {
+    return avatarUrl;
+  }
+
+  return avatarUrl;
+}
+
+function buildGitHubAvatarUrl(login: string): string {
+  return `https://github.com/${login}.png?size=${GITHUB_AVATAR_SIZE}`;
+}
+
+function getRepositoryName(payload: PushPayload): string {
+  const repoName =
+    payload.repository.name ??
+    payload.repository.full_name.split('/').at(-1) ??
+    payload.repository.full_name;
+
+  return truncate(repoName, DISCORD_WEBHOOK_USERNAME_MAX_LENGTH);
+}
+
+function buildWebhookAvatarUrl(payload: PushPayload, allAnonymous: boolean): string {
   if (allAnonymous) {
     return ANONYMOUS_AVATAR_URL;
   }
 
-  return (
-    payload.sender.avatar_url ??
-    `https://github.com/${payload.sender.login}.png?size=64`
-  );
+  const avatarUrl = payload.sender.avatar_url ?? buildGitHubAvatarUrl(payload.sender.login);
+
+  return withGitHubAvatarSize(avatarUrl);
 }
 
 function buildCommitLines(
@@ -180,6 +245,7 @@ function buildCommitLines(
   anonKeyword: string,
   maxCommits: number,
   maxTitleLength: number,
+  maxDescriptionLength: number,
 ): string[] {
   const lines: string[] = [];
   let anonymousCounter = 0;
@@ -201,6 +267,7 @@ function buildCommitLines(
         anonKeyword,
         anonymous ? anonymousCounter : undefined,
         maxTitleLength,
+        maxDescriptionLength,
       ),
     );
   }
@@ -237,6 +304,8 @@ export function buildDiscordMessage(
   const maxCommits = options.maxCommits ?? DEFAULT_MAX_COMMITS;
   const maxTextLength = options.maxTextLength ?? DEFAULT_MAX_TEXT_LENGTH;
   const maxTitleLength = options.maxTitleLength ?? DEFAULT_MAX_TITLE_LENGTH;
+  const maxDescriptionLength =
+    options.maxDescriptionLength ?? DEFAULT_MAX_DESCRIPTION_LENGTH;
 
   const branch = parseBranch(payload.ref);
   const commits = payload.commits;
@@ -254,32 +323,20 @@ export function buildDiscordMessage(
     allAnonymous,
     hasAnonymous,
   );
-  const avatarUrl = buildAvatarUrl(payload, allAnonymous);
   const lines = buildCommitLines(
     commits,
     anonKeyword,
     maxCommits,
     maxTitleLength,
+    maxDescriptionLength,
   );
   const commitContent = trimLinesToMaxLength(lines, maxTextLength).join('\n');
 
   const containerComponents: DiscordComponentsMessage['components'][0]['components'] =
     [
       {
-        type: 9,
-        components: [
-          {
-            type: 10,
-            content: header,
-          },
-        ],
-        accessory: {
-          type: 11,
-          media: {
-            url: avatarUrl,
-          },
-          description: allAnonymous ? 'Anonymous' : payload.sender.login,
-        },
+        type: 10,
+        content: header,
       },
       {
         type: 14,
@@ -307,6 +364,8 @@ export function buildDiscordMessage(
   }
 
   return {
+    username: getRepositoryName(payload),
+    avatar_url: buildWebhookAvatarUrl(payload, allAnonymous),
     flags: IS_COMPONENTS_V2,
     allowed_mentions: {
       parse: [],

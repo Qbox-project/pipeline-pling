@@ -1,0 +1,92 @@
+{
+  "ref": "refs/heads/main",
+  "before": "d3b3fa7abe13150e9d0ce715f085ed1b2acf17b9",
+  "after": "910302931c89179a7e723114155e8796f257cad5",
+  "compare": "https://github.com/Qbox-project/qbx_core/compare/d3b3fa7...9103029",
+  "commits": [
+    {
+      "id": "45d84858f282f736f64123f396474b37cfb3f2c4",
+      "message": "fix(bridge/qb): correct vehicle prop/colour mapping, 12h clock and Ki… (#758)\n\n* fix(bridge/qb): correct vehicle prop/colour mapping, 12h clock and Kick loop\n\n- modSubwoofer fell back to modKit17 (nitrous) instead of modKit19, so\n  qb props carried the wrong subwoofer mod.\n- the secondary-colour path passed props.color1 straight to\n  SetVehicleColours; when color1 is a custom RGB table that is not a valid\n  colour index. Fall back to colorPrimary unless color1 is a number.\n- GetCurrentTime reported noon (hour 12) as AM and never set\n  formattedHour for hours 0-12, so midnight/noon and AM hours formatted\n  wrong. Use standard 12-hour conversion.\n- Kick ran an unguarded `while true` with no Wait: a nil source spun the\n  thread forever, and a disconnected player (ping < 0) spawned DropPlayer\n  threads every 100ms indefinitely. The retry loop is pointless since\n  DropPlayer already ran once; remove it.\n\n* fix(modules/utils): apply GetCurrentTime 12h conversion fix\n\n---------\n\nCo-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>",
+      "timestamp": "2026-07-06T21:13:20Z",
+      "url": "https://github.com/Qbox-project/qbx_core/commit/45d84858f282f736f64123f396474b37cfb3f2c4",
+      "author": {
+        "name": "Whereiam",
+        "email": "84282589+WhereiamL@users.noreply.github.com",
+        "username": "WhereiamL"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "username": "web-flow"
+      },
+      "added": [],
+      "removed": [],
+      "modified": [
+        "bridge/qb/client/functions.lua",
+        "bridge/qb/server/functions.lua",
+        "modules/utils.lua"
+      ]
+    },
+    {
+      "id": "098c975b0bd277da507e967cdbabe7e719115a4e",
+      "message": "fix(bridge): pass anim flag in Progressbar (#764)\n\nox_lib's progressBar expects anim.flag, but the bridge passed flags. so animation flags wont work and falling back to 49.",
+      "timestamp": "2026-07-06T19:34:46Z",
+      "url": "https://github.com/Qbox-project/qbx_core/commit/098c975b0bd277da507e967cdbabe7e719115a4e",
+      "author": {
+        "name": "Nethusha",
+        "email": "87743415+nethushadev@users.noreply.github.com",
+        "username": "nethushadev"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "username": "web-flow"
+      },
+      "added": [],
+      "removed": [],
+      "modified": ["bridge/qb/client/functions.lua"]
+    },
+    {
+      "id": "910302931c89179a7e723114155e8796f257cad5",
+      "message": "fix(server/character): enforce character limit and protect unique ids (#750)",
+      "timestamp": "2026-06-03T15:58:50Z",
+      "url": "https://github.com/Qbox-project/qbx_core/commit/910302931c89179a7e723114155e8796f257cad5",
+      "author": {
+        "name": "Kenshin13",
+        "email": "63159154+Kenshiin13@users.noreply.github.com",
+        "username": "Kenshiin13"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "username": "web-flow"
+      },
+      "added": [],
+      "removed": [],
+      "modified": ["server/character.lua"]
+    }
+  ],
+  "repository": {
+    "id": 541786389,
+    "name": "qbx_core",
+    "full_name": "Qbox-project/qbx_core",
+    "html_url": "https://github.com/Qbox-project/qbx_core",
+    "private": false,
+    "owner": {
+      "name": "Qbox-project",
+      "email": "noreply@github.com",
+      "login": "Qbox-project"
+    }
+  },
+  "pusher": {
+    "name": "ChatDisabled",
+    "email": "44729807+ChatDisabled@users.noreply.github.com"
+  },
+  "sender": {
+    "login": "ChatDisabled",
+    "id": 44729807,
+    "type": "User",
+    "avatar_url": "https://avatars.githubusercontent.com/u/44729807?v=4",
+    "html_url": "https://github.com/ChatDisabled"
+  }
+}

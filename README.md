@@ -7,7 +7,9 @@ Post GitHub push commit notifications to Discord using the Components V2 message
 - Modern **node24** GitHub Action runtime with a bundled `dist/index.js`
 - Discord **Components V2** layout instead of legacy embeds
 - Actor-aware header using `sender.login` (merger/pusher), separate from commit authors
-- Per-commit lines with linked SHAs, titles, authors, co-authors, and committer when different
+- Per-commit lines with linked SHAs, titles, and author/co-author profile links
+- Bounded commit body excerpts for commits with descriptions
+- Per-message webhook name with higher-resolution sender avatars
 - GitHub profile links resolved from usernames or `users.noreply.github.com` emails
 - Anonymous commit support via a configurable keyword (default `!anon`)
 - Skips empty pushes and bot pushes (configurable)
@@ -82,7 +84,7 @@ Run all local workflow fixtures with one command:
 npm run act:test
 ```
 
-This runs `fixtures/push.json` and `fixtures/push-anon.json` sequentially through `.github/workflows/discord-push.yml` using `.secrets`. The script exits non-zero if `.secrets` is missing or any fixture run fails.
+This runs `fixtures/push.json`, `fixtures/push-anon.json`, and `fixtures/push-coauthors.json` sequentially through `.github/workflows/discord-push.yml` using `.secrets`. The script exits non-zero if `.secrets` is missing or any fixture run fails.
 
 The first run may take a while because Docker pulls the local runner image.
 
@@ -91,6 +93,7 @@ Optional direct `act` commands for debugging a single fixture:
 ```powershell
 act push -W .github/workflows/discord-push.yml --eventpath fixtures/push.json --secret-file .secrets
 act push -W .github/workflows/discord-push.yml --eventpath fixtures/push-anon.json --secret-file .secrets
+act push -W .github/workflows/discord-push.yml --eventpath fixtures/push-coauthors.json --secret-file .secrets
 ```
 
 ## License

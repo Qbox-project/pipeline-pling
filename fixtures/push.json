@@ -1,67 +1,69 @@
 {
   "ref": "refs/heads/main",
-  "before": "1111111111111111111111111111111111111111",
-  "after": "2222222222222222222222222222222222222222",
-  "compare": "https://github.com/qbox-project/pipeline-pling/compare/1111111...2222222",
+  "before": "50f87dc84f74e7d93792a340a545c3d6682cc216",
+  "after": "9d369b178074f21542ce55bf447e574aae89778c",
+  "compare": "https://github.com/Qbox-project/txAdminRecipe/compare/50f87dc...9d369b1",
   "commits": [
     {
-      "id": "abc1234567890abcdef1234567890abcdef1234",
-      "message": "feat: add local act test payload\n\nCo-authored-by: Jane Doe <123456+janedoe@users.noreply.github.com>",
-      "timestamp": "2026-07-07T12:00:00Z",
-      "url": "https://github.com/qbox-project/pipeline-pling/commit/abc1234567890abcdef1234567890abcdef1234",
+      "id": "04ea116975c20db99cd710337d0bc7ce90e13a65",
+      "message": "fix(items.lua): typo but also no",
+      "timestamp": "2025-09-06T22:06:29Z",
+      "url": "https://github.com/Qbox-project/txAdminRecipe/commit/04ea116975c20db99cd710337d0bc7ce90e13a65",
       "author": {
-        "name": "Trevor",
-        "email": "trevor@example.com",
-        "username": "TrevorBarnes"
+        "name": "ChatDisabled",
+        "email": "44729807+ChatDisabled@users.noreply.github.com",
+        "username": "ChatDisabled"
       },
       "committer": {
-        "name": "GitHub",
-        "email": "noreply@github.com",
-        "username": "web-flow"
-      },
-      "added": ["fixtures/push.json"],
-      "removed": [],
-      "modified": []
-    },
-    {
-      "id": "def4567890abcdef1234567890abcdef1234567",
-      "message": "fix: improve Discord notification rendering",
-      "timestamp": "2026-07-07T12:05:00Z",
-      "url": "https://github.com/qbox-project/pipeline-pling/commit/def4567890abcdef1234567890abcdef1234567",
-      "author": {
-        "name": "Alex Example",
-        "email": "987654+alex-example@users.noreply.github.com"
-      },
-      "committer": {
-        "name": "Alex Example",
-        "email": "987654+alex-example@users.noreply.github.com"
+        "name": "ChatDisabled",
+        "email": "44729807+ChatDisabled@users.noreply.github.com",
+        "username": "ChatDisabled"
       },
       "added": [],
       "removed": [],
-      "modified": ["src/message.ts"]
+      "modified": ["items.lua"]
+    },
+    {
+      "id": "9d369b178074f21542ce55bf447e574aae89778c",
+      "message": "tweak(voice.cfg): unset voice_useSendingRangeOnly\n\nFollowing: https://github.com/AvarianKnight/pma-voice/commit/9bf911f2c8dfd7a63a0e3d9259035ca0db1368ab",
+      "timestamp": "2025-11-27T15:48:53Z",
+      "url": "https://github.com/Qbox-project/txAdminRecipe/commit/9d369b178074f21542ce55bf447e574aae89778c",
+      "author": {
+        "name": "ChatDisabled",
+        "email": "44729807+ChatDisabled@users.noreply.github.com",
+        "username": "ChatDisabled"
+      },
+      "committer": {
+        "name": "ChatDisabled",
+        "email": "44729807+ChatDisabled@users.noreply.github.com",
+        "username": "ChatDisabled"
+      },
+      "added": [],
+      "removed": [],
+      "modified": ["voice.cfg"]
     }
   ],
   "repository": {
     "id": 1,
-    "name": "pipeline-pling",
-    "full_name": "qbox-project/pipeline-pling",
-    "html_url": "https://github.com/qbox-project/pipeline-pling",
+    "name": "txAdminRecipe",
+    "full_name": "Qbox-project/txAdminRecipe",
+    "html_url": "https://github.com/Qbox-project/txAdminRecipe",
     "private": false,
     "owner": {
-      "name": "qbox-project",
+      "name": "Qbox-project",
       "email": "noreply@github.com",
-      "login": "qbox-project"
+      "login": "Qbox-project"
     }
   },
   "pusher": {
-    "name": "TrevorBarnes",
-    "email": "trevor@example.com"
+    "name": "ChatDisabled",
+    "email": "44729807+ChatDisabled@users.noreply.github.com"
   },
   "sender": {
-    "login": "TrevorBarnes",
-    "id": 1,
+    "login": "ChatDisabled",
+    "id": 44729807,
     "type": "User",
-    "avatar_url": "https://avatars.githubusercontent.com/u/1?v=4",
-    "html_url": "https://github.com/TrevorBarnes"
+    "avatar_url": "https://avatars.githubusercontent.com/u/44729807?v=4",
+    "html_url": "https://github.com/ChatDisabled"
   }
 }
