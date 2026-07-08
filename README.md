@@ -12,6 +12,7 @@ Post GitHub push commit notifications to Discord using the Components V2 message
 - Per-message webhook name with higher-resolution sender avatars
 - GitHub profile links resolved from usernames or `users.noreply.github.com` emails
 - Anonymous commit support via a configurable keyword (default `!anon`)
+- Silent commit support via a configurable keyword (default `!silent`) to exclude commits from notifications
 - Skips empty pushes and bot pushes (configurable)
 - Clear webhook failure errors on non-2xx responses
 
@@ -47,6 +48,18 @@ List GitHub usernames in `full-anon-users` to fully redact any commit they autho
 
 ![Full anonymization](screenshots/fullanon.png)
 
+### Silent commits
+
+Put `!silent` on the first line of the commit body to exclude that commit from the Discord notification entirely. When every commit in the push is silent, the webhook is not called.
+
+```text
+chore(deps): bump lockfile
+
+!silent
+```
+
+When only some commits are silent, the notification shows only the remaining commits and uses the filtered commit count in the header (e.g. "is pushing 1 commit" when one non-silent commit remains).
+
 ## Usage
 
 ```yaml
@@ -57,6 +70,7 @@ List GitHub usernames in `full-anon-users` to fully redact any commit they autho
     thread-id: ${{ vars.DISCORD_THREAD_ID }} # optional
     skip-bots: true # default
     anon-keyword: '!anon' # default
+    silent-keyword: '!silent' # default
     accent-color: '#F1E542' # optional
     use-sender-avatar: true # default
     use-repo-username: true # default
@@ -72,6 +86,7 @@ List GitHub usernames in `full-anon-users` to fully redact any commit they autho
 | `thread-id` | no | | Optional forum thread ID |
 | `skip-bots` | no | `true` | Skip notifications for bot senders |
 | `anon-keyword` | no | `!anon` | Keyword that marks a commit as anonymous in Discord output |
+| `silent-keyword` | no | `!silent` | Keyword that excludes a commit from Discord notifications |
 | `accent-color` | no | | Optional hex accent color for the container (e.g. `#F1E542` or `F1E542`). Invalid values log a warning and fall back to a deterministic hash color from the repository name |
 | `use-sender-avatar` | no | `true` | When `false`, omit `avatar_url` so Discord uses the webhook's configured avatar |
 | `use-repo-username` | no | `true` | When `false`, omit `username` so Discord uses the webhook's configured name |
@@ -113,6 +128,24 @@ Provide a comma-separated list of GitHub usernames. Any commit whose author or c
 When a listed user is the push sender, the header actor becomes `**Anonymous**` (no link) and the anonymous avatar is used when avatars are enabled.
 
 A commit is treated as anonymous if **either** the keyword matches **or** the author/co-author is in the full-anon list. Mixed pushes omit the **View changes** button and use a plain branch label when any commit is anonymous.
+
+### Silent commits (`silent-keyword`)
+
+If a commit message puts the silent keyword on the first line of the commit body, that commit is excluded from the Discord notification. Silent commits are removed before the message is built; they do not appear as redacted placeholders.
+
+Example:
+
+```text
+chore(deps): bump lockfile
+
+!silent
+```
+
+When every commit in the push is silent, the action logs `All commits in push are silent; skipping.` and does not call the webhook.
+
+When only some commits are silent, the notification includes only the non-silent commits. The header uses the filtered count (singular `commit` when exactly one remains).
+
+Silent commits are independent of anonymization: a commit can be both silent and anonymous, but silent takes precedence by excluding the commit entirely.
 
 ## Development
 

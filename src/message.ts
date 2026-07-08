@@ -12,6 +12,7 @@ import {
 } from './types.js';
 
 const DEFAULT_ANON_KEYWORD = '!anon';
+const DEFAULT_SILENT_KEYWORD = '!silent';
 const DEFAULT_MAX_COMMITS = 10;
 const DEFAULT_MAX_TEXT_LENGTH = 4000;
 const DEFAULT_MAX_TITLE_LENGTH = 72;
@@ -193,6 +194,28 @@ export function isAnonymousCommit(message: string, anonKeyword: string): boolean
   }
 
   return false;
+}
+
+export function isSilentCommit(message: string, silentKeyword: string): boolean {
+  const lines = message.split(/\r?\n/);
+
+  for (let index = 1; index < lines.length; index++) {
+    const trimmedLine = lines[index].trim();
+    if (trimmedLine === '') {
+      continue;
+    }
+
+    return trimmedLine === silentKeyword;
+  }
+
+  return false;
+}
+
+export function filterSilentCommits(
+  commits: PushCommit[],
+  silentKeyword: string = DEFAULT_SILENT_KEYWORD,
+): PushCommit[] {
+  return commits.filter((commit) => !isSilentCommit(commit.message, silentKeyword));
 }
 
 export function isCommitFullyAnonymous(

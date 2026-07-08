@@ -4,6 +4,7 @@ import { colorFromRepoName } from '../color.js';
 import {
   buildDiscordMessage,
   buildBranchUrl,
+  filterSilentCommits,
   formatCommitAttribution,
   formatCommitTitle,
   formatGitHubUser,
@@ -12,6 +13,7 @@ import {
   isAnonymousCommit,
   isCommitFullyAnonymous,
   isMeaningfullyDifferent,
+  isSilentCommit,
   linkPrReferences,
   parseBranch,
   parseCoAuthors,
@@ -244,6 +246,49 @@ describe('parseUsernameList', () => {
   it('returns an empty list for blank input', () => {
     expect(parseUsernameList('')).toEqual([]);
     expect(parseUsernameList('  ,  ')).toEqual([]);
+  });
+});
+
+describe('isSilentCommit', () => {
+  it('detects silent keyword on the first commit body line', () => {
+    expect(isSilentCommit('feat: hide\n\n!silent', '!silent')).toBe(true);
+    expect(isSilentCommit('feat: hide\n!silent', '!silent')).toBe(true);
+    expect(isSilentCommit('feat: hide !silent please', '!silent')).toBe(false);
+    expect(isSilentCommit('feat: hide\n\nnotes\n\n!silent', '!silent')).toBe(false);
+  });
+});
+
+describe('filterSilentCommits', () => {
+  it('removes commits marked with the silent keyword', () => {
+    const commits = [
+      makeCommit({ message: 'feat: visible' }),
+      makeCommit({
+        id: '9d369b178074f21542ce55bf447e574aae89778c',
+        message: 'chore: hidden\n\n!silent',
+      }),
+      makeCommit({
+        id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        message: 'fix: also visible',
+      }),
+    ];
+
+    const filtered = filterSilentCommits(commits, '!silent');
+
+    expect(filtered).toHaveLength(2);
+    expect(filtered[0].message).toBe('feat: visible');
+    expect(filtered[1].message).toBe('fix: also visible');
+  });
+
+  it('returns an empty array when all commits are silent', () => {
+    const commits = [
+      makeCommit({ message: 'feat: hidden\n\n!silent' }),
+      makeCommit({
+        id: '9d369b178074f21542ce55bf447e574aae89778c',
+        message: 'chore: also hidden\n\n!silent',
+      }),
+    ];
+
+    expect(filterSilentCommits(commits, '!silent')).toEqual([]);
   });
 });
 
@@ -741,6 +786,60 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
     expect(displayedCommits.length).toBeLessThan(commits.length);
     expect(displayedCommits.length).toBeGreaterThan(0);
   });
+
+  it('uses singular commit label when filtered payload has one commit', () => {
+    const payload = makePayload({
+      commits: [
+        makeCommit({ message: 'feat: hidden\n\n!silent' }),
+        makeCommit({
+          id: '9d369b178074f21542ce55bf447e574aae89778c',
+          message: 'fix: visible change',
+          url: 'https://github.com/Qbox-project/txAdminRecipe/commit/9d369b178074f21542ce55bf447e574aae89778c',
+        }),
+      ],
+    });
+
+    const filteredPayload = {
+      ...payload,
+      commits: filterSilentCommits(payload.commits, '!silent'),
+    };
+    const header = getHeaderContent(buildDiscordMessage(filteredPayload));
+    const commitContent = getCommitContent(buildDiscordMessage(filteredPayload));
+
+    expect(header).toContain('is pushing 1 commit to');
+    expect(header).not.toContain('1 commits');
+    expect(commitContent).toContain('fix: visible change');
+    expect(commitContent).not.toContain('feat: hidden');
+  });
+
+  it('omits silent commits from mixed pushes while keeping non-silent commits', () => {
+    const payload = makePayload({
+      commits: [
+        makeCommit({ message: 'feat: hidden\n\n!silent' }),
+        makeCommit({
+          id: '9d369b178074f21542ce55bf447e574aae89778c',
+          message: 'fix: visible change',
+          url: 'https://github.com/Qbox-project/txAdminRecipe/commit/9d369b178074f21542ce55bf447e574aae89778c',
+        }),
+        makeCommit({
+          id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          message: 'chore: also hidden\n\n!silent',
+        }),
+      ],
+    });
+
+    const filteredPayload = {
+      ...payload,
+      commits: filterSilentCommits(payload.commits, '!silent'),
+    };
+    const header = getHeaderContent(buildDiscordMessage(filteredPayload));
+    const commitContent = getCommitContent(buildDiscordMessage(filteredPayload));
+
+    expect(header).toContain('is pushing 1 commit to');
+    expect(commitContent).toContain('fix: visible change');
+    expect(commitContent).not.toContain('feat: hidden');
+    expect(commitContent).not.toContain('chore: also hidden');
+  });
 });
 
 describe('shouldSkipPush', () => {
@@ -755,6 +854,25 @@ describe('shouldSkipPush', () => {
         true,
       ),
     ).toMatch(/bot/);
+  });
+});
+
+describe('all-silent skip scenario', () => {
+  it('leaves no visible commits when every commit is silent', () => {
+    const payload = makePayload({
+      commits: [
+        makeCommit({ message: 'feat: hidden\n\n!silent' }),
+        makeCommit({
+          id: '9d369b178074f21542ce55bf447e574aae89778c',
+          message: 'chore: also hidden\n\n!silent',
+        }),
+      ],
+    });
+
+    const visibleCommits = filterSilentCommits(payload.commits, '!silent');
+
+    expect(visibleCommits).toHaveLength(0);
+    expect(shouldSkipPush(payload, true)).toBeUndefined();
   });
 });
 

@@ -19,6 +19,10 @@ inputs:
     description: Commit message keyword that marks a commit as anonymous in Discord output
     required: false
     default: '!anon'
+  silent-keyword:
+    description: Commit message keyword that excludes a commit from Discord notifications
+    required: false
+    default: '!silent'
   accent-color:
     description: Optional hex accent color for the Discord container (e.g. #F1E542 or F1E542). Falls back to a deterministic hash color when omitted or invalid.
     required: false

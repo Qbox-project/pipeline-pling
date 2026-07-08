@@ -3,7 +3,12 @@ import * as github from '@actions/github';
 
 import { parseHexColor } from './color.js';
 import { sendDiscordWebhook } from './discord.js';
-import { buildDiscordMessage, parseUsernameList, shouldSkipPush } from './message.js';
+import {
+  buildDiscordMessage,
+  filterSilentCommits,
+  parseUsernameList,
+  shouldSkipPush,
+} from './message.js';
 import type { PushPayload } from './types.js';
 
 export async function run(): Promise<void> {
@@ -15,6 +20,7 @@ export async function run(): Promise<void> {
   const payload = github.context.payload as unknown as PushPayload;
   const skipBots = core.getBooleanInput('skip-bots');
   const anonKeyword = core.getInput('anon-keyword') || '!anon';
+  const silentKeyword = core.getInput('silent-keyword') || '!silent';
   const webhookUrl = core.getInput('webhook-url', { required: true });
   const threadId = core.getInput('thread-id');
   const useSenderAvatar = core.getBooleanInput('use-sender-avatar');
@@ -41,7 +47,18 @@ export async function run(): Promise<void> {
     return;
   }
 
-  const message = buildDiscordMessage(payload, {
+  const visibleCommits = filterSilentCommits(payload.commits, silentKeyword);
+  if (visibleCommits.length === 0) {
+    core.info('All commits in push are silent; skipping.');
+    return;
+  }
+
+  const notificationPayload: PushPayload = {
+    ...payload,
+    commits: visibleCommits,
+  };
+
+  const message = buildDiscordMessage(notificationPayload, {
     anonKeyword,
     accentColor,
     useSenderAvatar,
@@ -51,7 +68,7 @@ export async function run(): Promise<void> {
   });
 
   core.info(
-    `Sending Discord notification for ${payload.commits.length} commit(s) to ${payload.repository.full_name}.`,
+    `Sending Discord notification for ${visibleCommits.length} commit(s) to ${payload.repository.full_name}.`,
   );
 
   await sendDiscordWebhook({
