@@ -6,6 +6,7 @@ import { sendDiscordWebhook } from './discord.js';
 import {
   buildDiscordMessage,
   filterSilentCommits,
+  parseBranchList,
   parseUsernameList,
   shouldSkipPush,
 } from './message.js';
@@ -21,6 +22,8 @@ export async function run(): Promise<void> {
   const skipBots = core.getBooleanInput('skip-bots');
   const anonKeyword = core.getInput('anon-keyword') || '!anon';
   const silentKeyword = core.getInput('silent-keyword') || '!silent';
+  const branchAllowlist = parseBranchList(core.getInput('branch-allowlist'));
+  const branchDenylist = parseBranchList(core.getInput('branch-denylist'));
   const webhookUrl = core.getInput('webhook-url', { required: true });
   const threadId = core.getInput('thread-id');
   const useSenderAvatar = core.getBooleanInput('use-sender-avatar');
@@ -41,7 +44,10 @@ export async function run(): Promise<void> {
     }
   }
 
-  const skipReason = shouldSkipPush(payload, skipBots);
+  const skipReason = shouldSkipPush(payload, skipBots, {
+    branchAllowlist,
+    branchDenylist,
+  });
   if (skipReason) {
     core.info(skipReason);
     return;

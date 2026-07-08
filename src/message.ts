@@ -52,6 +52,13 @@ export function parseUsernameList(input: string): string[] {
     .map((entry) => entry.toLowerCase());
 }
 
+export function parseBranchList(input: string): string[] {
+  return input
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 function isUserInAnonList(user: GitHubUser, anonUsers: string[]): boolean {
   if (anonUsers.length === 0) {
     return false;
@@ -573,9 +580,31 @@ export function buildDiscordMessage(
   return message;
 }
 
+export function isBranchNotificationAllowed(
+  branch: string,
+  branchAllowlist: string[] = [],
+  branchDenylist: string[] = [],
+): boolean {
+  if (branchAllowlist.length > 0 && !branchAllowlist.includes(branch)) {
+    return false;
+  }
+
+  if (branchDenylist.length > 0 && branchDenylist.includes(branch)) {
+    return false;
+  }
+
+  return true;
+}
+
+export interface ShouldSkipPushOptions {
+  branchAllowlist?: string[];
+  branchDenylist?: string[];
+}
+
 export function shouldSkipPush(
   payload: PushPayload,
   skipBots: boolean,
+  options: ShouldSkipPushOptions = {},
 ): string | undefined {
   if (!payload.commits || payload.commits.length === 0) {
     return 'No commits in push payload; skipping.';
@@ -583,6 +612,20 @@ export function shouldSkipPush(
 
   if (skipBots && payload.sender.type === 'Bot') {
     return 'Push sender is a bot; skipping.';
+  }
+
+  const branchAllowlist = options.branchAllowlist ?? [];
+  const branchDenylist = options.branchDenylist ?? [];
+
+  if (branchAllowlist.length > 0 || branchDenylist.length > 0) {
+    const branch = parseBranch(payload.ref);
+    if (!isBranchNotificationAllowed(branch, branchAllowlist, branchDenylist)) {
+      if (branchAllowlist.length > 0 && !branchAllowlist.includes(branch)) {
+        return `Branch "${branch}" is not in the allowlist; skipping.`;
+      }
+
+      return `Branch "${branch}" is in the denylist; skipping.`;
+    }
   }
 
   return undefined;

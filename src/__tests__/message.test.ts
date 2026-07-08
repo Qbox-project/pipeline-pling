@@ -11,11 +11,13 @@ import {
   getCommitDescription,
   getCommitTitle,
   isAnonymousCommit,
+  isBranchNotificationAllowed,
   isCommitFullyAnonymous,
   isMeaningfullyDifferent,
   isSilentCommit,
   linkPrReferences,
   parseBranch,
+  parseBranchList,
   parseCoAuthors,
   parseUsernameList,
   resolveUsername,
@@ -249,6 +251,21 @@ describe('parseUsernameList', () => {
   });
 });
 
+describe('parseBranchList', () => {
+  it('parses comma-separated branch names preserving case', () => {
+    expect(parseBranchList(' main, feature/foo , ,Release ')).toEqual([
+      'main',
+      'feature/foo',
+      'Release',
+    ]);
+  });
+
+  it('returns an empty list for blank input', () => {
+    expect(parseBranchList('')).toEqual([]);
+    expect(parseBranchList('  ,  ')).toEqual([]);
+  });
+});
+
 describe('isSilentCommit', () => {
   it('detects silent keyword on the first commit body line', () => {
     expect(isSilentCommit('feat: hide\n\n!silent', '!silent')).toBe(true);
@@ -289,6 +306,36 @@ describe('filterSilentCommits', () => {
     ];
 
     expect(filterSilentCommits(commits, '!silent')).toEqual([]);
+  });
+});
+
+describe('isBranchNotificationAllowed', () => {
+  it('allows any branch when both lists are empty', () => {
+    expect(isBranchNotificationAllowed('main', [], [])).toBe(true);
+  });
+
+  it('requires an allowlist match when allowlist is set', () => {
+    expect(isBranchNotificationAllowed('main', ['main', 'develop'], [])).toBe(true);
+    expect(isBranchNotificationAllowed('feature/foo', ['main'], [])).toBe(false);
+  });
+
+  it('rejects denylisted branches', () => {
+    expect(isBranchNotificationAllowed('main', [], ['dependabot'])).toBe(true);
+    expect(isBranchNotificationAllowed('dependabot', [], ['dependabot'])).toBe(false);
+  });
+
+  it('uses case-sensitive branch matching', () => {
+    expect(isBranchNotificationAllowed('Main', ['main'], [])).toBe(false);
+    expect(isBranchNotificationAllowed('main', ['Main'], [])).toBe(false);
+  });
+
+  it('requires allowlist match and not denylist when both are set', () => {
+    expect(
+      isBranchNotificationAllowed('main', ['main', 'develop'], ['main']),
+    ).toBe(false);
+    expect(
+      isBranchNotificationAllowed('develop', ['main', 'develop'], ['main']),
+    ).toBe(true);
   });
 });
 
@@ -854,6 +901,45 @@ describe('shouldSkipPush', () => {
         true,
       ),
     ).toMatch(/bot/);
+  });
+
+  it('skips pushes to branches not in the allowlist', () => {
+    expect(
+      shouldSkipPush(makePayload({ ref: 'refs/heads/feature/foo' }), true, {
+        branchAllowlist: ['main', 'develop'],
+      }),
+    ).toMatch(/not in the allowlist/);
+  });
+
+  it('allows pushes to branches in the allowlist', () => {
+    expect(
+      shouldSkipPush(makePayload({ ref: 'refs/heads/main' }), true, {
+        branchAllowlist: ['main', 'develop'],
+      }),
+    ).toBeUndefined();
+  });
+
+  it('skips pushes to branches in the denylist', () => {
+    expect(
+      shouldSkipPush(makePayload({ ref: 'refs/heads/dependabot' }), true, {
+        branchDenylist: ['dependabot'],
+      }),
+    ).toMatch(/in the denylist/);
+  });
+
+  it('applies allowlist and denylist together', () => {
+    expect(
+      shouldSkipPush(makePayload({ ref: 'refs/heads/main' }), true, {
+        branchAllowlist: ['main', 'develop'],
+        branchDenylist: ['main'],
+      }),
+    ).toMatch(/in the denylist/);
+    expect(
+      shouldSkipPush(makePayload({ ref: 'refs/heads/develop' }), true, {
+        branchAllowlist: ['main', 'develop'],
+        branchDenylist: ['main'],
+      }),
+    ).toBeUndefined();
   });
 });
 

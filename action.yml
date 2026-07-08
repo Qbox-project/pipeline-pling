@@ -23,6 +23,12 @@ inputs:
     description: Commit message keyword that excludes a commit from Discord notifications
     required: false
     default: '!silent'
+  branch-allowlist:
+    description: Comma-separated branch names; when set, only notify for pushes to these branches
+    required: false
+  branch-denylist:
+    description: Comma-separated branch names; when set, skip notifications for pushes to these branches
+    required: false
   accent-color:
     description: Optional hex accent color for the Discord container (e.g. #F1E542 or F1E542). Falls back to a deterministic hash color when omitted or invalid.
     required: false

@@ -13,6 +13,7 @@ Post GitHub push commit notifications to Discord using the Components V2 message
 - GitHub profile links resolved from usernames or `users.noreply.github.com` emails
 - Anonymous commit support via a configurable keyword (default `!anon`)
 - Silent commit support via a configurable keyword (default `!silent`) to exclude commits from notifications
+- Branch allowlist and denylist for targeting or excluding specific branches
 - Skips empty pushes and bot pushes (configurable)
 - Clear webhook failure errors on non-2xx responses
 
@@ -71,6 +72,8 @@ When only some commits are silent, the notification shows only the remaining com
     skip-bots: true # default
     anon-keyword: '!anon' # default
     silent-keyword: '!silent' # default
+    branch-allowlist: 'main,develop' # optional
+    branch-denylist: 'dependabot' # optional
     accent-color: '#F1E542' # optional
     use-sender-avatar: true # default
     use-repo-username: true # default
@@ -87,6 +90,8 @@ When only some commits are silent, the notification shows only the remaining com
 | `skip-bots` | no | `true` | Skip notifications for bot senders |
 | `anon-keyword` | no | `!anon` | Keyword that marks a commit as anonymous in Discord output |
 | `silent-keyword` | no | `!silent` | Keyword that excludes a commit from Discord notifications |
+| `branch-allowlist` | no | | Comma-separated branch names; when set, only notify for pushes to these branches (case-sensitive exact match) |
+| `branch-denylist` | no | | Comma-separated branch names; when set, skip notifications for pushes to these branches (case-sensitive exact match) |
 | `accent-color` | no | | Optional hex accent color for the container (e.g. `#F1E542` or `F1E542`). Invalid values log a warning and fall back to a deterministic hash color from the repository name |
 | `use-sender-avatar` | no | `true` | When `false`, omit `avatar_url` so Discord uses the webhook's configured avatar |
 | `use-repo-username` | no | `true` | When `false`, omit `username` so Discord uses the webhook's configured name |
@@ -146,6 +151,15 @@ When every commit in the push is silent, the action logs `All commits in push ar
 When only some commits are silent, the notification includes only the non-silent commits. The header uses the filtered count (singular `commit` when exactly one remains).
 
 Silent commits are independent of anonymization: a commit can be both silent and anonymous, but silent takes precedence by excluding the commit entirely.
+
+### Branch filtering (`branch-allowlist`, `branch-denylist`)
+
+Provide comma-separated branch names to control which pushes trigger notifications. Branch names are matched exactly against the parsed push ref (e.g. `refs/heads/main` → `main`). Matching is **case-sensitive**.
+
+- **`branch-allowlist`**: when non-empty, only pushes to listed branches notify.
+- **`branch-denylist`**: when non-empty, pushes to listed branches are skipped.
+
+When both are set, a branch must pass the allowlist **and** not be in the denylist. An empty or omitted list is ignored.
 
 ## Development
 
