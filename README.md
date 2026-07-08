@@ -38,15 +38,19 @@ Post GitHub push commit notifications to Discord using the Components V2 message
 
 ## Anonymous commits
 
-If a commit message contains the anonymous keyword, Discord output redacts the commit title, body, SHA, links, and all author/co-author/committer details. Anonymous commits render as `` `Anonymous commit` `` or `` `Anonymous commit #N` ``.
+If a commit message puts the anonymous keyword on the first line of the commit body, Discord output redacts the commit title, body, SHA, links, and all author/co-author/committer details. Anonymous commits render as `` `Anonymous commit` ``.
 
-When every commit in the push is anonymous:
+Example:
 
-- The header actor becomes **Anonymous**
-- The avatar becomes a generic silhouette
-- The **View changes** button is omitted
+```text
+fix(items.lua): typo but also no
 
-When only some commits are anonymous, non-anonymous commits render normally, but compare links are still omitted so anonymous commits cannot be discovered from the notification.
+!anon
+```
+
+When every commit in the push is anonymous, commit details are still redacted and the **View changes** button is omitted.
+
+When only some commits are anonymous, non-anonymous commits render normally, but branch and compare links are still omitted so anonymous commits cannot be discovered from the notification.
 
 ## Development
 

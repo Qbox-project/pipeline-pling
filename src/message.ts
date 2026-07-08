@@ -7,7 +7,6 @@ import type {
 } from './types.js';
 import { colorFromRepoName } from './color.js';
 import {
-  ANONYMOUS_AVATAR_URL,
   IS_COMPONENTS_V2,
 } from './types.js';
 
@@ -148,7 +147,18 @@ export function formatCommitTitle(
 }
 
 export function isAnonymousCommit(message: string, anonKeyword: string): boolean {
-  return message.includes(anonKeyword);
+  const lines = message.split(/\r?\n/);
+
+  for (let index = 1; index < lines.length; index++) {
+    const trimmedLine = lines[index].trim();
+    if (trimmedLine === '') {
+      continue;
+    }
+
+    return trimmedLine === anonKeyword;
+  }
+
+  return false;
 }
 
 export function formatCommitAttribution(
@@ -188,17 +198,12 @@ function formatCommitDescription(message: string, maxDescriptionLength: number):
 function formatCommitLine(
   commit: PushCommit,
   anonKeyword: string,
-  anonymousIndex: number | undefined,
   maxTitleLength: number,
   maxDescriptionLength: number,
   repoHtmlUrl: string,
 ): string {
   if (isAnonymousCommit(commit.message, anonKeyword)) {
-    if (anonymousIndex === 1) {
-      return '`Anonymous commit`';
-    }
-
-    return `\`Anonymous commit #${anonymousIndex}\``;
+    return '`Anonymous commit`';
   }
 
   const shortSha = commit.id.slice(0, 7);
@@ -219,21 +224,16 @@ function buildHeader(
   payload: PushPayload,
   branch: string,
   commitCount: number,
-  allAnonymous: boolean,
-  hasAnonymous: boolean,
+  hasMixedAnonymous: boolean,
 ): string {
   const repo = payload.repository.full_name;
   const branchUrl = buildBranchUrl(payload.repository.html_url, branch);
-  const branchLabel = hasAnonymous
+  const branchLabel = hasMixedAnonymous
     ? `\`${repo}/${branch}\``
     : `[\`${repo}/${branch}\`](${branchUrl})`;
   const commitLabel = commitCount === 1 ? 'commit' : 'commits';
-
-  if (allAnonymous) {
-    return `**Anonymous** is pushing ${commitCount} ${commitLabel} to ${branchLabel}`;
-  }
-
   const actor = payload.sender.login;
+
   return `**[${actor}](https://github.com/${actor})** is pushing ${commitCount} ${commitLabel} to ${branchLabel}`;
 }
 
@@ -269,11 +269,7 @@ function getRepositoryName(payload: PushPayload): string {
   return truncate(repoName, DISCORD_WEBHOOK_USERNAME_MAX_LENGTH);
 }
 
-function buildWebhookAvatarUrl(payload: PushPayload, allAnonymous: boolean): string {
-  if (allAnonymous) {
-    return ANONYMOUS_AVATAR_URL;
-  }
-
+function buildWebhookAvatarUrl(payload: PushPayload): string {
   const avatarUrl = payload.sender.avatar_url ?? buildGitHubAvatarUrl(payload.sender.login);
 
   return withGitHubAvatarSize(avatarUrl);
@@ -288,7 +284,6 @@ function buildCommitLines(
   repoHtmlUrl: string,
 ): string[] {
   const lines: string[] = [];
-  let anonymousCounter = 0;
 
   for (const [index, commit] of commits.entries()) {
     if (index >= maxCommits) {
@@ -296,16 +291,10 @@ function buildCommitLines(
       break;
     }
 
-    const anonymous = isAnonymousCommit(commit.message, anonKeyword);
-    if (anonymous) {
-      anonymousCounter += 1;
-    }
-
     lines.push(
       formatCommitLine(
         commit,
         anonKeyword,
-        anonymous ? anonymousCounter : undefined,
         maxTitleLength,
         maxDescriptionLength,
         repoHtmlUrl,
@@ -353,17 +342,11 @@ export function buildDiscordMessage(
   const hasAnonymous = commits.some((commit) =>
     isAnonymousCommit(commit.message, anonKeyword),
   );
-  const allAnonymous =
-    commits.length > 0 &&
-    commits.every((commit) => isAnonymousCommit(commit.message, anonKeyword));
+  const hasMixedAnonymous =
+    hasAnonymous &&
+    !commits.every((commit) => isAnonymousCommit(commit.message, anonKeyword));
 
-  const header = buildHeader(
-    payload,
-    branch,
-    commits.length,
-    allAnonymous,
-    hasAnonymous,
-  );
+  const header = buildHeader(payload, branch, commits.length, hasMixedAnonymous);
   const lines = buildCommitLines(
     commits,
     anonKeyword,
@@ -409,7 +392,7 @@ export function buildDiscordMessage(
 
   return {
     username: getRepositoryName(payload),
-    avatar_url: buildWebhookAvatarUrl(payload, allAnonymous),
+    avatar_url: buildWebhookAvatarUrl(payload),
     flags: IS_COMPONENTS_V2,
     allowed_mentions: {
       parse: [],

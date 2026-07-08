@@ -6,7 +6,7 @@
   "commits": [
     {
       "id": "04ea116975c20db99cd710337d0bc7ce90e13a65",
-      "message": "fix(items.lua): typo but also no !anon",
+      "message": "fix(items.lua): typo but also no\n\n!anon",
       "timestamp": "2025-09-06T22:06:29Z",
       "url": "https://github.com/Qbox-project/txAdminRecipe/commit/04ea116975c20db99cd710337d0bc7ce90e13a65",
       "author": {
@@ -25,7 +25,7 @@
     },
     {
       "id": "9d369b178074f21542ce55bf447e574aae89778c",
-      "message": "tweak(voice.cfg): unset voice_useSendingRangeOnly !anon\n\nFollowing: https://github.com/AvarianKnight/pma-voice/commit/9bf911f2c8dfd7a63a0e3d9259035ca0db1368ab",
+      "message": "tweak(voice.cfg): unset voice_useSendingRangeOnly\n\n!anon\n\nFollowing: https://github.com/AvarianKnight/pma-voice/commit/9bf911f2c8dfd7a63a0e3d9259035ca0db1368ab",
       "timestamp": "2025-11-27T15:48:53Z",
       "url": "https://github.com/Qbox-project/txAdminRecipe/commit/9d369b178074f21542ce55bf447e574aae89778c",
       "author": {

@@ -383,12 +383,12 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
     const payload = makePayload({
       commits: [
         makeCommit({
-          message: 'fix(items.lua): typo but also no !anon',
+          message: 'fix(items.lua): typo but also no\n\n!anon',
         }),
         makeCommit({
           id: '9d369b178074f21542ce55bf447e574aae89778c',
           message:
-            'tweak(voice.cfg): unset voice_useSendingRangeOnly !anon\n\nFollowing: https://github.com/AvarianKnight/pma-voice/commit/9bf911f2c8dfd7a63a0e3d9259035ca0db1368ab',
+            'tweak(voice.cfg): unset voice_useSendingRangeOnly\n\n!anon\n\nFollowing: https://github.com/AvarianKnight/pma-voice/commit/9bf911f2c8dfd7a63a0e3d9259035ca0db1368ab',
           url: 'https://github.com/Qbox-project/txAdminRecipe/commit/9d369b178074f21542ce55bf447e574aae89778c',
           timestamp: '2025-11-27T15:48:53Z',
         }),
@@ -400,16 +400,18 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
     const commitContent = getCommitContent(message);
     const serialized = JSON.stringify(message);
 
-    expect(header).toContain('**Anonymous** is pushing 2 commits');
-    expect(message.avatar_url).toBe('https://avatars.githubusercontent.com/u/0?s=256&v=4');
+    expect(header).toContain('[ChatDisabled](https://github.com/ChatDisabled)');
+    expect(header).toContain(
+      '[`Qbox-project/txAdminRecipe/main`](https://github.com/Qbox-project/txAdminRecipe/tree/main)',
+    );
+    expect(message.avatar_url).toBe('https://avatars.githubusercontent.com/u/44729807?v=4&s=256');
     expect(commitContent).toContain('`Anonymous commit`');
-    expect(commitContent).toContain('`Anonymous commit #2`');
+    expect(commitContent).not.toContain('Anonymous commit #');
     expect(hasViewChangesButton(message)).toBe(false);
     expect(serialized).not.toContain('!anon');
     expect(serialized).not.toContain('fix(items.lua)');
     expect(serialized).not.toContain('voice_useSendingRangeOnly');
     expect(serialized).not.toContain('Following:');
-    expect(serialized).not.toContain('ChatDisabled');
     expect(serialized).not.toContain('44729807+ChatDisabled@users.noreply.github.com');
     expect(serialized).not.toContain('04ea116');
     expect(serialized).not.toContain('9d369b1');
@@ -427,7 +429,7 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
         makeCommit({
           id: anonymousSha,
           url: anonymousUrl,
-          message: 'fix(items.lua): typo but also no !anon',
+          message: 'fix(items.lua): typo but also no\n\n!anon',
         }),
         makeCommit({
           id: '9d369b178074f21542ce55bf447e574aae89778c',
@@ -496,8 +498,11 @@ describe('shouldSkipPush', () => {
 });
 
 describe('helpers', () => {
-  it('detects anonymous keyword presence', () => {
-    expect(isAnonymousCommit('feat: hide !anon please', '!anon')).toBe(true);
+  it('detects anonymous keyword on the first commit body line', () => {
+    expect(isAnonymousCommit('feat: hide\n\n!anon', '!anon')).toBe(true);
+    expect(isAnonymousCommit('feat: hide\n!anon', '!anon')).toBe(true);
+    expect(isAnonymousCommit('feat: hide !anon please', '!anon')).toBe(false);
+    expect(isAnonymousCommit('feat: hide\n\nnotes\n\n!anon', '!anon')).toBe(false);
   });
 
   it('extracts and truncates commit titles', () => {
