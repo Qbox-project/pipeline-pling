@@ -1,8 +1,9 @@
+# act-only: default inputs scenario (branch never pushed in CI)
 name: Discord Push Notification
 
 on:
   push:
-    branches: [main]
+    branches: [__act_only_push__]
 
 jobs:
   notify:

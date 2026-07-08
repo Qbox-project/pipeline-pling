@@ -167,7 +167,7 @@ This builds `dist/index.js` automatically, then runs six scenarios sequentially 
 | `push-full-anon` | `discord-push-full-anon.yml` | `push-full-anon.json` | `full-anon-users: WhereiamL` — one fully redacted commit mixed with a normal commit |
 | `push-custom` | `discord-push-custom.yml` | `push.json` | `accent-color: #E74C3C`, `use-sender-avatar: false`, `use-repo-username: false` — red accent, webhook default name/avatar |
 
-Act-only workflows (`discord-push-name-anon.yml`, `discord-push-full-anon.yml`, `discord-push-custom.yml`) use placeholder branch filters (`__act_only_*__`) so they do not run on real pushes to `main`.
+All Discord push workflows (`discord-push.yml`, `discord-push-name-anon.yml`, `discord-push-full-anon.yml`, `discord-push-custom.yml`) are act-only test fixtures with placeholder branch filters (`__act_only_*__`), so they never run on real pushes.
 
 The first run may take a while because Docker pulls the local runner image.
 
