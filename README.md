@@ -49,6 +49,28 @@ List GitHub usernames in `full-anon-users` to fully redact any commit they autho
 
 ![Full anonymization](screenshots/fullanon.png)
 
+### Repository name override
+
+Set `repo-name` to replace the webhook username and push header repository label with a custom display name. Run `npm run act:test` scenario **`push-repo-name`** to preview.
+
+![Repository name override](screenshots/reponame.png)
+
+### Hide links
+
+Set `hide-links: true` to omit all hyperlinks — actor, branch, SHAs, PR refs, author/co-author links, and the **View changes** button. Run **`push-hide-links`** (uses the co-authored fixture so PR refs and author links are visibly stripped).
+
+![Hide links](screenshots/hidelinks.png)
+
+### Branch colors
+
+Set `branch-colors` with `pattern=#RRGGBB` entries to pick the container accent color by branch. Run **`push-branch-colors-main`**, **`push-branch-colors-develop`**, or **`push-branch-colors-fix`** to preview green (`main`), red (`develop`), and orange (`fix/*`) accents on the same commit payload.
+
+![Branch colors (main)](screenshots/branchcolors-main.png)
+
+![Branch colors (develop)](screenshots/branchcolors-develop.png)
+
+![Branch colors (fix/*)](screenshots/branchcolors-fix.png)
+
 ### Silent commits
 
 Put `!silent` on the first line of the commit body to exclude that commit from the Discord notification entirely. When every commit in the push is silent, the webhook is not called.
@@ -233,7 +255,7 @@ Run all local workflow fixtures with one command:
 npm run act:test
 ```
 
-This builds `dist/index.js` automatically, then runs six scenarios sequentially through act using `.secrets`. Each scenario posts a real Discord message so you can visually inspect the output — see [Examples](#examples) for reference screenshots. The script exits non-zero if the build fails, `.secrets` is missing, or any scenario fails.
+This builds `dist/index.js` automatically, then runs eleven scenarios sequentially through act using `.secrets`. Each scenario posts a real Discord message so you can visually inspect the output — see [Examples](#examples) for reference screenshots. The script exits non-zero if the build fails, `.secrets` is missing, or any scenario fails.
 
 | Scenario | Workflow | Fixture | What to look for |
 | --- | --- | --- | --- |
@@ -243,8 +265,13 @@ This builds `dist/index.js` automatically, then runs six scenarios sequentially 
 | `push-name-anon` | `discord-push-name-anon.yml` | `push-name-anon.json` | `name-anon-users: ChatDisabled,WhereiamL` — Anonymous header/avatars/names, commits still visible; includes co-author |
 | `push-full-anon` | `discord-push-full-anon.yml` | `push-full-anon.json` | `full-anon-users: WhereiamL` — one fully redacted commit mixed with a normal commit |
 | `push-custom` | `discord-push-custom.yml` | `push.json` | `accent-color: #E74C3C`, `use-sender-avatar: false`, `use-repo-username: false` — red accent, webhook default name/avatar |
+| `push-repo-name` | `discord-push-repo-name.yml` | `push.json` | `repo-name: My Project` — custom webhook username and header repository label |
+| `push-hide-links` | `discord-push-hide-links.yml` | `push-coauthors.json` | `hide-links: true` — plain text only, no hyperlinks or View changes button |
+| `push-branch-colors-main` | `discord-push-branch-colors.yml` | `push.json` | `branch-colors` — green accent for `main` |
+| `push-branch-colors-develop` | `discord-push-branch-colors.yml` | `push-branch-develop.json` | `branch-colors` — red accent for `develop` |
+| `push-branch-colors-fix` | `discord-push-branch-colors.yml` | `push-branch-fix.json` | `branch-colors` — orange accent for `fix/*` glob |
 
-All Discord push workflows (`discord-push.yml`, `discord-push-name-anon.yml`, `discord-push-full-anon.yml`, `discord-push-custom.yml`) are act-only test fixtures with placeholder branch filters (`__act_only_*__`), so they never run on real pushes.
+All Discord push workflows (`discord-push.yml`, `discord-push-name-anon.yml`, `discord-push-full-anon.yml`, `discord-push-custom.yml`, `discord-push-repo-name.yml`, `discord-push-hide-links.yml`, `discord-push-branch-colors.yml`) are act-only test fixtures with placeholder branch filters (`__act_only_*__`), so they never run on real pushes.
 
 The first run may take a while because Docker pulls the local runner image.
 
@@ -255,6 +282,11 @@ act push -W .github/workflows/discord-push.yml --eventpath fixtures/push.json --
 act push -W .github/workflows/discord-push-name-anon.yml --eventpath fixtures/push-name-anon.json --secret-file .secrets
 act push -W .github/workflows/discord-push-full-anon.yml --eventpath fixtures/push-full-anon.json --secret-file .secrets
 act push -W .github/workflows/discord-push-custom.yml --eventpath fixtures/push.json --secret-file .secrets
+act push -W .github/workflows/discord-push-repo-name.yml --eventpath fixtures/push.json --secret-file .secrets
+act push -W .github/workflows/discord-push-hide-links.yml --eventpath fixtures/push-coauthors.json --secret-file .secrets
+act push -W .github/workflows/discord-push-branch-colors.yml --eventpath fixtures/push.json --secret-file .secrets
+act push -W .github/workflows/discord-push-branch-colors.yml --eventpath fixtures/push-branch-develop.json --secret-file .secrets
+act push -W .github/workflows/discord-push-branch-colors.yml --eventpath fixtures/push-branch-fix.json --secret-file .secrets
 ```
 
 ## License

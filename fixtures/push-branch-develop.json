@@ -1,0 +1,69 @@
+{
+  "ref": "refs/heads/develop",
+  "before": "50f87dc84f74e7d93792a340a545c3d6682cc216",
+  "after": "9d369b178074f21542ce55bf447e574aae89778c",
+  "compare": "https://github.com/Qbox-project/txAdminRecipe/compare/50f87dc...9d369b1",
+  "commits": [
+    {
+      "id": "04ea116975c20db99cd710337d0bc7ce90e13a65",
+      "message": "fix(items.lua): typo but also no",
+      "timestamp": "2025-09-06T22:06:29Z",
+      "url": "https://github.com/Qbox-project/txAdminRecipe/commit/04ea116975c20db99cd710337d0bc7ce90e13a65",
+      "author": {
+        "name": "ChatDisabled",
+        "email": "44729807+ChatDisabled@users.noreply.github.com",
+        "username": "ChatDisabled"
+      },
+      "committer": {
+        "name": "ChatDisabled",
+        "email": "44729807+ChatDisabled@users.noreply.github.com",
+        "username": "ChatDisabled"
+      },
+      "added": [],
+      "removed": [],
+      "modified": ["items.lua"]
+    },
+    {
+      "id": "9d369b178074f21542ce55bf447e574aae89778c",
+      "message": "tweak(voice.cfg): unset voice_useSendingRangeOnly\n\nFollowing: https://github.com/AvarianKnight/pma-voice/commit/9bf911f2c8dfd7a63a0e3d9259035ca0db1368ab",
+      "timestamp": "2025-11-27T15:48:53Z",
+      "url": "https://github.com/Qbox-project/txAdminRecipe/commit/9d369b178074f21542ce55bf447e574aae89778c",
+      "author": {
+        "name": "ChatDisabled",
+        "email": "44729807+ChatDisabled@users.noreply.github.com",
+        "username": "ChatDisabled"
+      },
+      "committer": {
+        "name": "ChatDisabled",
+        "email": "44729807+ChatDisabled@users.noreply.github.com",
+        "username": "ChatDisabled"
+      },
+      "added": [],
+      "removed": [],
+      "modified": ["voice.cfg"]
+    }
+  ],
+  "repository": {
+    "id": 1,
+    "name": "txAdminRecipe",
+    "full_name": "Qbox-project/txAdminRecipe",
+    "html_url": "https://github.com/Qbox-project/txAdminRecipe",
+    "private": false,
+    "owner": {
+      "name": "Qbox-project",
+      "email": "noreply@github.com",
+      "login": "Qbox-project"
+    }
+  },
+  "pusher": {
+    "name": "ChatDisabled",
+    "email": "44729807+ChatDisabled@users.noreply.github.com"
+  },
+  "sender": {
+    "login": "ChatDisabled",
+    "id": 44729807,
+    "type": "User",
+    "avatar_url": "https://avatars.githubusercontent.com/u/44729807?v=4",
+    "html_url": "https://github.com/ChatDisabled"
+  }
+}
