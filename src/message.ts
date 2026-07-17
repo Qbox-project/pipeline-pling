@@ -315,6 +315,22 @@ function formatCommitLine(
   return `[\`${shortSha}\`](${commit.url}) ${title}\n${attributionText}${descriptionText}`;
 }
 
+function resolveRepositoryDisplayName(
+  payload: PushPayload,
+  repoNameOverride?: string,
+): string {
+  if (repoNameOverride?.trim()) {
+    return truncate(repoNameOverride.trim(), DISCORD_WEBHOOK_USERNAME_MAX_LENGTH);
+  }
+
+  const repoName =
+    payload.repository.name ??
+    payload.repository.full_name.split('/').at(-1) ??
+    payload.repository.full_name;
+
+  return truncate(repoName, DISCORD_WEBHOOK_USERNAME_MAX_LENGTH);
+}
+
 function buildHeader(
   payload: PushPayload,
   branch: string,
@@ -322,8 +338,11 @@ function buildHeader(
   hasMixedAnonymous: boolean,
   nameAnonUsers: string[],
   fullAnonUsers: string[],
+  repoNameOverride?: string,
 ): string {
-  const repo = payload.repository.full_name;
+  const repo = repoNameOverride?.trim()
+    ? resolveRepositoryDisplayName(payload, repoNameOverride)
+    : payload.repository.full_name;
   const branchUrl = buildBranchUrl(payload.repository.html_url, branch);
   const branchLabel = hasMixedAnonymous
     ? `\`${repo}/${branch}\``
@@ -363,13 +382,11 @@ function buildGitHubAvatarUrl(login: string): string {
   return `https://github.com/${login}.png?size=${GITHUB_AVATAR_SIZE}`;
 }
 
-function getRepositoryName(payload: PushPayload): string {
-  const repoName =
-    payload.repository.name ??
-    payload.repository.full_name.split('/').at(-1) ??
-    payload.repository.full_name;
-
-  return truncate(repoName, DISCORD_WEBHOOK_USERNAME_MAX_LENGTH);
+function getRepositoryName(
+  payload: PushPayload,
+  repoNameOverride?: string,
+): string {
+  return resolveRepositoryDisplayName(payload, repoNameOverride);
 }
 
 function buildWebhookAvatarUrl(
@@ -494,6 +511,8 @@ export function buildDiscordMessage(
       isCommitFullyAnonymous(commit, anonKeyword, fullAnonUsers),
     );
 
+  const repoNameOverride = options.repoName?.trim() || undefined;
+
   const header = buildHeader(
     payload,
     branch,
@@ -501,6 +520,7 @@ export function buildDiscordMessage(
     hasMixedAnonymous,
     nameAnonUsers,
     fullAnonUsers,
+    repoNameOverride,
   );
   const lines = buildCommitLines(
     commits,
@@ -566,7 +586,7 @@ export function buildDiscordMessage(
   };
 
   if (useRepoUsername) {
-    message.username = getRepositoryName(payload);
+    message.username = getRepositoryName(payload, repoNameOverride);
   }
 
   if (useSenderAvatar) {

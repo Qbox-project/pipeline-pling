@@ -28,6 +28,7 @@ export async function run(): Promise<void> {
   const threadId = core.getInput('thread-id');
   const useSenderAvatar = core.getBooleanInput('use-sender-avatar');
   const useRepoUsername = core.getBooleanInput('use-repo-username');
+  const repoName = core.getInput('repo-name');
   const nameAnonUsers = parseUsernameList(core.getInput('name-anon-users'));
   const fullAnonUsers = parseUsernameList(core.getInput('full-anon-users'));
 
@@ -69,6 +70,7 @@ export async function run(): Promise<void> {
     accentColor,
     useSenderAvatar,
     useRepoUsername,
+    repoName: repoName || undefined,
     nameAnonUsers,
     fullAnonUsers,
   });

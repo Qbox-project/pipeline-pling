@@ -81,6 +81,7 @@ export interface BuildMessageOptions {
   accentColor?: number;
   useSenderAvatar?: boolean;
   useRepoUsername?: boolean;
+  repoName?: string;
   nameAnonUsers?: string[];
   fullAnonUsers?: string[];
   maxCommits?: number;

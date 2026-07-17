@@ -664,6 +664,45 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
     expect(message.username).toBeUndefined();
   });
 
+  it('uses repo-name override for webhook username and header repository label', () => {
+    const message = buildDiscordMessage(makePayload(), {
+      repoName: 'My Project',
+    });
+    const header = getHeaderContent(message);
+
+    expect(message.username).toBe('My Project');
+    expect(header).toContain(
+      '[`My Project/main`](https://github.com/Qbox-project/txAdminRecipe/tree/main)',
+    );
+    expect(header).not.toContain('Qbox-project/txAdminRecipe/main');
+  });
+
+  it('truncates repo-name override to Discord username limit for username and header', () => {
+    const longName = 'x'.repeat(100);
+    const message = buildDiscordMessage(makePayload(), {
+      repoName: longName,
+    });
+    const header = getHeaderContent(message);
+    const expectedName = `${'x'.repeat(77)}...`;
+
+    expect(message.username).toBe(expectedName);
+    expect(message.username).toHaveLength(80);
+    expect(header).toContain(`\`${expectedName}/main\``);
+  });
+
+  it('does not set username when repo-name override is set but useRepoUsername is false', () => {
+    const message = buildDiscordMessage(makePayload(), {
+      repoName: 'My Project',
+      useRepoUsername: false,
+    });
+    const header = getHeaderContent(message);
+
+    expect(message.username).toBeUndefined();
+    expect(header).toContain(
+      '[`My Project/main`](https://github.com/Qbox-project/txAdminRecipe/tree/main)',
+    );
+  });
+
   it('anonymizes matched author names while keeping commit details visible', () => {
     const payload = makePayload({
       commits: [
