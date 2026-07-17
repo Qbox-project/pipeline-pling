@@ -40,6 +40,9 @@ inputs:
     description: When true, set the webhook username to the repository name
     required: false
     default: 'true'
+  repo-name:
+    description: Optional display name override for the webhook username and push header repository label
+    required: false
   name-anon-users:
     description: Comma-separated GitHub usernames whose display names are anonymized (author, co-author, or pusher) while commit details remain visible
     required: false
