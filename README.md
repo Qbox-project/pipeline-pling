@@ -78,6 +78,7 @@ When only some commits are silent, the notification shows only the remaining com
     use-sender-avatar: true # default
     use-repo-username: true # default
     repo-name: 'My Project' # optional display name override
+    hide-links: false # default; set true to omit all hyperlinks
     name-anon-users: 'alice,bob' # optional
     full-anon-users: 'secret-user' # optional
 ```
@@ -97,6 +98,7 @@ When only some commits are silent, the notification shows only the remaining com
 | `use-sender-avatar` | no | `true` | When `false`, omit `avatar_url` so Discord uses the webhook's configured avatar |
 | `use-repo-username` | no | `true` | When `false`, omit `username` so Discord uses the webhook's configured name |
 | `repo-name` | no | | Optional display name override for the webhook username and push header repository label (truncated to 80 characters). Empty or omitted uses the repository name as today |
+| `hide-links` | no | `false` | When `true`, omit all hyperlinks from the notification (actor, branch, SHAs, PR refs, author/co-author links, and the View changes button) |
 | `name-anon-users` | no | | Comma-separated GitHub usernames whose display names are anonymized in the header, commit author lines, and co-author lines |
 | `full-anon-users` | no | | Comma-separated GitHub usernames whose commits are fully redacted when they are the author or a co-author |
 

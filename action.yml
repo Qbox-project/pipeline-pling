@@ -43,6 +43,10 @@ inputs:
   repo-name:
     description: Optional display name override for the webhook username and push header repository label
     required: false
+  hide-links:
+    description: When true, omit all hyperlinks from the Discord notification
+    required: false
+    default: 'false'
   name-anon-users:
     description: Comma-separated GitHub usernames whose display names are anonymized (author, co-author, or pusher) while commit details remain visible
     required: false

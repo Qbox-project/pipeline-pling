@@ -80,6 +80,7 @@ function isSenderAnonymized(
 export function formatGitHubUser(
   user: GitHubUser,
   nameAnonUsers: string[] = [],
+  hideLinks: boolean = false,
 ): string {
   if (isUserInAnonList(user, nameAnonUsers)) {
     return 'Anonymous';
@@ -87,7 +88,7 @@ export function formatGitHubUser(
 
   const username = resolveUsername(user);
   if (username) {
-    return `[${user.name}](https://github.com/${username})`;
+    return formatMarkdownLink(user.name, `https://github.com/${username}`, hideLinks);
   }
 
   return user.name;
@@ -157,11 +158,26 @@ export function truncate(text: string, maxLength: number): string {
   return `${text.slice(0, maxLength - 3)}...`;
 }
 
-export function linkPrReferences(title: string, repoHtmlUrl: string): string {
+export function formatMarkdownLink(
+  label: string,
+  url: string,
+  hideLinks: boolean,
+): string {
+  return hideLinks ? label : `[${label}](${url})`;
+}
+
+export function linkPrReferences(
+  title: string,
+  repoHtmlUrl: string,
+  hideLinks: boolean = false,
+): string {
   const repoUrl = repoHtmlUrl.replace(/\/$/, '');
   return title.replace(
     PR_REF_REGEX,
-    (_, num) => `([#${num}](${repoUrl}/pull/${num}))`,
+    (_, num) =>
+      hideLinks
+        ? `(#${num})`
+        : `([#${num}](${repoUrl}/pull/${num}))`,
   );
 }
 
@@ -169,12 +185,13 @@ export function formatCommitTitle(
   message: string,
   maxTitleLength: number,
   repoHtmlUrl: string,
+  hideLinks: boolean = false,
 ): string {
   const rawTitle = getCommitTitle(message);
   const trailingPrMatch = rawTitle.match(/\s*\(#\d+\)\s*$/);
 
   if (!trailingPrMatch) {
-    return linkPrReferences(truncate(rawTitle, maxTitleLength), repoHtmlUrl);
+    return linkPrReferences(truncate(rawTitle, maxTitleLength), repoHtmlUrl, hideLinks);
   }
 
   const prSuffix = trailingPrMatch[0];
@@ -182,10 +199,14 @@ export function formatCommitTitle(
   const maxBaseLength = maxTitleLength - prSuffix.length;
 
   if (maxBaseLength <= 0) {
-    return linkPrReferences(truncate(rawTitle, maxTitleLength), repoHtmlUrl);
+    return linkPrReferences(truncate(rawTitle, maxTitleLength), repoHtmlUrl, hideLinks);
   }
 
-  return linkPrReferences(truncate(baseTitle, maxBaseLength) + prSuffix, repoHtmlUrl);
+  return linkPrReferences(
+    truncate(baseTitle, maxBaseLength) + prSuffix,
+    repoHtmlUrl,
+    hideLinks,
+  );
 }
 
 export function isAnonymousCommit(message: string, anonKeyword: string): boolean {
@@ -253,8 +274,9 @@ export function formatCommitAttribution(
   author: GitHubUser,
   coAuthors: ParsedCoAuthor[],
   nameAnonUsers: string[] = [],
+  hideLinks: boolean = false,
 ): string {
-  const authorText = formatGitHubUser(author, nameAnonUsers);
+  const authorText = formatGitHubUser(author, nameAnonUsers, hideLinks);
   const peopleText =
     coAuthors.length === 0
       ? authorText
@@ -266,6 +288,7 @@ export function formatCommitAttribution(
                 email: coAuthor.email,
               },
               nameAnonUsers,
+              hideLinks,
             ),
           )
           .join(', ')}`;
@@ -295,24 +318,34 @@ function formatCommitLine(
   maxTitleLength: number,
   maxDescriptionLength: number,
   repoHtmlUrl: string,
+  hideLinks: boolean,
 ): string {
   if (isCommitFullyAnonymous(commit, anonKeyword, fullAnonUsers)) {
     return '`Anonymous commit`';
   }
 
   const shortSha = commit.id.slice(0, 7);
-  const title = formatCommitTitle(commit.message, maxTitleLength, repoHtmlUrl);
+  const title = formatCommitTitle(
+    commit.message,
+    maxTitleLength,
+    repoHtmlUrl,
+    hideLinks,
+  );
   const attributionText = formatCommitAttribution(
     commit.author,
     parseCoAuthors(commit.message),
     nameAnonUsers,
+    hideLinks,
   );
   const descriptionText = formatCommitDescription(
     commit.message,
     maxDescriptionLength,
   );
+  const shaText = hideLinks
+    ? `\`${shortSha}\``
+    : formatMarkdownLink(`\`${shortSha}\``, commit.url, hideLinks);
 
-  return `[\`${shortSha}\`](${commit.url}) ${title}\n${attributionText}${descriptionText}`;
+  return `${shaText} ${title}\n${attributionText}${descriptionText}`;
 }
 
 function resolveRepositoryDisplayName(
@@ -339,14 +372,17 @@ function buildHeader(
   nameAnonUsers: string[],
   fullAnonUsers: string[],
   repoNameOverride?: string,
+  hideLinks: boolean = false,
 ): string {
   const repo = repoNameOverride?.trim()
     ? resolveRepositoryDisplayName(payload, repoNameOverride)
     : payload.repository.full_name;
   const branchUrl = buildBranchUrl(payload.repository.html_url, branch);
-  const branchLabel = hasMixedAnonymous
-    ? `\`${repo}/${branch}\``
-    : `[\`${repo}/${branch}\`](${branchUrl})`;
+  const branchText = `\`${repo}/${branch}\``;
+  const branchLabel =
+    hideLinks || hasMixedAnonymous
+      ? branchText
+      : formatMarkdownLink(branchText, branchUrl, hideLinks);
   const commitLabel = commitCount === 1 ? 'commit' : 'commits';
   const actor = isSenderAnonymized(
     payload.sender.login,
@@ -354,7 +390,9 @@ function buildHeader(
     fullAnonUsers,
   )
     ? '**Anonymous**'
-    : `**[${payload.sender.login}](https://github.com/${payload.sender.login})**`;
+    : hideLinks
+      ? `**${payload.sender.login}**`
+      : `**[${payload.sender.login}](https://github.com/${payload.sender.login})**`;
 
   return `${actor} is pushing ${commitCount} ${commitLabel} to ${branchLabel}`;
 }
@@ -412,6 +450,7 @@ function buildCommitLines(
   maxTitleLength: number,
   maxDescriptionLength: number,
   repoHtmlUrl: string,
+  hideLinks: boolean,
 ): string[] {
   const lines: string[] = [];
 
@@ -430,6 +469,7 @@ function buildCommitLines(
         maxTitleLength,
         maxDescriptionLength,
         repoHtmlUrl,
+        hideLinks,
       ),
     );
   }
@@ -492,6 +532,7 @@ export function buildDiscordMessage(
   const anonKeyword = options.anonKeyword ?? DEFAULT_ANON_KEYWORD;
   const useSenderAvatar = options.useSenderAvatar ?? true;
   const useRepoUsername = options.useRepoUsername ?? true;
+  const hideLinks = options.hideLinks ?? false;
   const nameAnonUsers = (options.nameAnonUsers ?? []).map((user) => user.toLowerCase());
   const fullAnonUsers = (options.fullAnonUsers ?? []).map((user) => user.toLowerCase());
   const maxCommits = options.maxCommits ?? DEFAULT_MAX_COMMITS;
@@ -521,6 +562,7 @@ export function buildDiscordMessage(
     nameAnonUsers,
     fullAnonUsers,
     repoNameOverride,
+    hideLinks,
   );
   const lines = buildCommitLines(
     commits,
@@ -531,6 +573,7 @@ export function buildDiscordMessage(
     maxTitleLength,
     maxDescriptionLength,
     payload.repository.html_url,
+    hideLinks,
   );
   const commitTextBudget = Math.max(0, maxTextLength - header.length);
   const commitContent = trimLinesToMaxLength(lines, commitTextBudget).join(
@@ -554,7 +597,7 @@ export function buildDiscordMessage(
       },
     ];
 
-  if (!hasAnonymous) {
+  if (!hasAnonymous && !hideLinks) {
     containerComponents.push({
       type: 1,
       components: [

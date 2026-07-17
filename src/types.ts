@@ -82,6 +82,7 @@ export interface BuildMessageOptions {
   useSenderAvatar?: boolean;
   useRepoUsername?: boolean;
   repoName?: string;
+  hideLinks?: boolean;
   nameAnonUsers?: string[];
   fullAnonUsers?: string[];
   maxCommits?: number;
