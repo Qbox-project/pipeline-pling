@@ -29,6 +29,7 @@ export async function run(): Promise<void> {
   const useSenderAvatar = core.getBooleanInput('use-sender-avatar');
   const useRepoUsername = core.getBooleanInput('use-repo-username');
   const repoName = core.getInput('repo-name');
+  const hideLinks = core.getBooleanInput('hide-links');
   const nameAnonUsers = parseUsernameList(core.getInput('name-anon-users'));
   const fullAnonUsers = parseUsernameList(core.getInput('full-anon-users'));
 
@@ -71,6 +72,7 @@ export async function run(): Promise<void> {
     useSenderAvatar,
     useRepoUsername,
     repoName: repoName || undefined,
+    hideLinks,
     nameAnonUsers,
     fullAnonUsers,
   });

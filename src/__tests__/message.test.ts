@@ -703,6 +703,63 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
     );
   });
 
+  it('omits hyperlinks when hideLinks is true', () => {
+    const payload = makePayload({
+      compare: 'https://github.com/Qbox-project/qbx_core/compare/d3b3fa7...45d8485',
+      repository: {
+        name: 'qbx_core',
+        full_name: 'Qbox-project/qbx_core',
+        html_url: 'https://github.com/Qbox-project/qbx_core',
+      },
+      commits: [
+        makeCommit({
+          id: '45d84858f282f736f64123f396474b37cfb3f2c4',
+          message: `fix(bridge/qb): correct vehicle prop/colour mapping (#758)
+
+Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
+          url: 'https://github.com/Qbox-project/qbx_core/commit/45d84858f282f736f64123f396474b37cfb3f2c4',
+          author: {
+            name: 'Whereiam',
+            email: '84282589+WhereiamL@users.noreply.github.com',
+            username: 'WhereiamL',
+          },
+        }),
+      ],
+    });
+
+    const message = buildDiscordMessage(payload, { hideLinks: true });
+    const header = getHeaderContent(message);
+    const commitContent = getCommitContent(message);
+    const serialized = JSON.stringify(message);
+
+    expect(header).toContain('**ChatDisabled** is pushing');
+    expect(header).not.toMatch(/\[[^\]]+\]\([^)]+\)/);
+    expect(header).toContain('`Qbox-project/qbx_core/main`');
+    expect(commitContent).toContain('`45d8485`');
+    expect(commitContent).not.toMatch(/\[`45d8485`\]\(/);
+    expect(commitContent).toContain('(#758)');
+    expect(commitContent).not.toContain('[#758](');
+    expect(commitContent).toContain('*by* Whereiam & ChatDisabled');
+    expect(commitContent).not.toContain('github.com/WhereiamL');
+    expect(hasViewChangesButton(message)).toBe(false);
+    expect(serialized).not.toContain('View changes');
+  });
+
+  it('keeps hyperlinks when hideLinks is false (default)', () => {
+    const message = buildDiscordMessage(makePayload());
+    const header = getHeaderContent(message);
+    const commitContent = getCommitContent(message);
+
+    expect(header).toContain('[ChatDisabled](https://github.com/ChatDisabled)');
+    expect(header).toContain(
+      '[`Qbox-project/txAdminRecipe/main`](https://github.com/Qbox-project/txAdminRecipe/tree/main)',
+    );
+    expect(commitContent).toContain(
+      '[`04ea116`](https://github.com/Qbox-project/txAdminRecipe/commit/04ea116975c20db99cd710337d0bc7ce90e13a65)',
+    );
+    expect(hasViewChangesButton(message)).toBe(true);
+  });
+
   it('anonymizes matched author names while keeping commit details visible', () => {
     const payload = makePayload({
       commits: [
@@ -1034,6 +1091,12 @@ describe('linkPrReferences', () => {
     );
   });
 
+  it('leaves (#N) plain when hideLinks is true', () => {
+    expect(linkPrReferences('fix: something (#758)', repoUrl, true)).toBe(
+      'fix: something (#758)',
+    );
+  });
+
   it('replaces multiple PR references', () => {
     expect(linkPrReferences('merge: a (#1) and (#2)', repoUrl)).toBe(
       'merge: a ([#1](https://github.com/Qbox-project/qbx_core/pull/1)) and ([#2](https://github.com/Qbox-project/qbx_core/pull/2))',
@@ -1070,5 +1133,14 @@ body`;
   it('truncates plain titles without PR refs as before', () => {
     expect(formatCommitTitle('short title', 72, repoUrl)).toBe('short title');
     expect(formatCommitTitle('x'.repeat(80), 72, repoUrl)).toHaveLength(72);
+  });
+
+  it('leaves PR refs plain when hideLinks is true', () => {
+    const message = `fix(bridge/qb): correct vehicle prop/colour mapping (#758)
+
+body`;
+
+    expect(formatCommitTitle(message, 72, repoUrl, true)).toContain('(#758)');
+    expect(formatCommitTitle(message, 72, repoUrl, true)).not.toContain('[#758](');
   });
 });
