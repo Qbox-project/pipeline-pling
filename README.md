@@ -79,6 +79,10 @@ When only some commits are silent, the notification shows only the remaining com
     use-repo-username: true # default
     repo-name: 'My Project' # optional display name override
     hide-links: false # default; set true to omit all hyperlinks
+    branch-colors: |
+      main=#22c55e
+      develop=#ef4444
+      fix/*=#f97316
     name-anon-users: 'alice,bob' # optional
     full-anon-users: 'secret-user' # optional
 ```
@@ -94,11 +98,12 @@ When only some commits are silent, the notification shows only the remaining com
 | `silent-keyword` | no | `!silent` | Keyword that excludes a commit from Discord notifications |
 | `branch-allowlist` | no | | Comma-separated branch names; when set, only notify for pushes to these branches (case-sensitive exact match) |
 | `branch-denylist` | no | | Comma-separated branch names; when set, skip notifications for pushes to these branches (case-sensitive exact match) |
-| `accent-color` | no | | Optional hex accent color for the container (e.g. `#F1E542` or `F1E542`). Invalid values log a warning and fall back to a deterministic hash color from the repository name |
+| `accent-color` | no | | Optional hex accent color for the container (e.g. `#F1E542` or `F1E542`). Overridden by `branch-colors` when a pattern matches. Invalid values log a warning and fall back to a deterministic hash color from the repository name |
 | `use-sender-avatar` | no | `true` | When `false`, omit `avatar_url` so Discord uses the webhook's configured avatar |
 | `use-repo-username` | no | `true` | When `false`, omit `username` so Discord uses the webhook's configured name |
 | `repo-name` | no | | Optional display name override for the webhook username and push header repository label (truncated to 80 characters). Empty or omitted uses the repository name as today |
 | `hide-links` | no | `false` | When `true`, omit all hyperlinks from the notification (actor, branch, SHAs, PR refs, author/co-author links, and the View changes button) |
+| `branch-colors` | no | | Per-branch accent colors as `pattern=#RRGGBB` entries separated by commas and/or newlines. First matching pattern wins (case-sensitive glob matching: `*` for one path segment, `**` across segments). Invalid hex values are skipped with a warning |
 | `name-anon-users` | no | | Comma-separated GitHub usernames whose display names are anonymized in the header, commit author lines, and co-author lines |
 | `full-anon-users` | no | | Comma-separated GitHub usernames whose commits are fully redacted when they are the author or a co-author |
 
@@ -164,6 +169,27 @@ Provide comma-separated branch names to control which pushes trigger notificatio
 - **`branch-denylist`**: when non-empty, pushes to listed branches are skipped.
 
 When both are set, a branch must pass the allowlist **and** not be in the denylist. An empty or omitted list is ignored.
+
+### Per-branch accent colors (`branch-colors`)
+
+Provide `pattern=#RRGGBB` entries separated by commas and/or newlines to set the container accent color by branch. Matching is **case-sensitive** and uses simple globs: `*` matches one path segment, `**` matches across segments.
+
+Example:
+
+```yaml
+branch-colors: |
+  main=#22c55e
+  develop=#ef4444
+  fix/*=#f97316
+```
+
+Resolution order for the container accent color:
+
+1. First matching `branch-colors` pattern for the push branch (declaration order)
+2. `accent-color` input when valid
+3. Deterministic hash color from the repository name
+
+Invalid hex values in a `branch-colors` entry are skipped with a warning; the action does not fail.
 
 ## Development
 
