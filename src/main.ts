@@ -1,11 +1,12 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
-import { parseHexColor } from './color.js';
+import { parseBranchColors, parseHexColor, resolveAccentColor } from './color.js';
 import { sendDiscordWebhook } from './discord.js';
 import {
   buildDiscordMessage,
   filterSilentCommits,
+  parseBranch,
   parseBranchList,
   parseUsernameList,
   shouldSkipPush,
@@ -46,6 +47,10 @@ export async function run(): Promise<void> {
     }
   }
 
+  const branchColors = parseBranchColors(core.getInput('branch-colors'), (message) =>
+    core.warning(message),
+  );
+
   const skipReason = shouldSkipPush(payload, skipBots, {
     branchAllowlist,
     branchDenylist,
@@ -66,9 +71,17 @@ export async function run(): Promise<void> {
     commits: visibleCommits,
   };
 
+  const branch = parseBranch(payload.ref);
+  const resolvedAccentColor = resolveAccentColor(
+    branch,
+    branchColors,
+    accentColor,
+    payload.repository.full_name,
+  );
+
   const message = buildDiscordMessage(notificationPayload, {
     anonKeyword,
-    accentColor,
+    accentColor: resolvedAccentColor,
     useSenderAvatar,
     useRepoUsername,
     repoName: repoName || undefined,

@@ -30,7 +30,7 @@ inputs:
     description: Comma-separated branch names; when set, skip notifications for pushes to these branches
     required: false
   accent-color:
-    description: Optional hex accent color for the Discord container (e.g. #F1E542 or F1E542). Falls back to a deterministic hash color when omitted or invalid.
+    description: Optional hex accent color for the Discord container (e.g. #F1E542 or F1E542). Overridden by branch-colors when a pattern matches. Falls back to a deterministic hash color when omitted or invalid.
     required: false
   use-sender-avatar:
     description: When true, set the webhook avatar to the push sender's GitHub avatar
@@ -47,6 +47,9 @@ inputs:
     description: When true, omit all hyperlinks from the Discord notification
     required: false
     default: 'false'
+  branch-colors:
+    description: Optional per-branch accent colors as pattern=#RRGGBB entries (comma or newline separated). First matching pattern wins.
+    required: false
   name-anon-users:
     description: Comma-separated GitHub usernames whose display names are anonymized (author, co-author, or pusher) while commit details remain visible
     required: false
