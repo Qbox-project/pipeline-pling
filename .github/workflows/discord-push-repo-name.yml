@@ -1,0 +1,19 @@
+# act-only: repo-name override scenario (branch never pushed in CI)
+name: Discord Push Notification (act repo-name)
+
+on:
+  push:
+    branches: [__act_only_repo_name__]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Notify Discord
+        uses: ./
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          thread-id: ${{ vars.DISCORD_THREAD_ID }}
+          repo-name: 'My Project'

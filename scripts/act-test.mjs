@@ -48,6 +48,36 @@ const scenarios = [
     workflow: "discord-push-custom.yml",
     fixture: "push.json",
   },
+  {
+    label: "push-repo-name",
+    description: "repo-name override — webhook username and header label",
+    workflow: "discord-push-repo-name.yml",
+    fixture: "push.json",
+  },
+  {
+    label: "push-hide-links",
+    description: "hide-links — plain text, no View changes button",
+    workflow: "discord-push-hide-links.yml",
+    fixture: "push-coauthors.json",
+  },
+  {
+    label: "push-branch-colors-main",
+    description: "branch-colors — green accent for main",
+    workflow: "discord-push-branch-colors.yml",
+    fixture: "push.json",
+  },
+  {
+    label: "push-branch-colors-develop",
+    description: "branch-colors — red accent for develop",
+    workflow: "discord-push-branch-colors.yml",
+    fixture: "push-branch-develop.json",
+  },
+  {
+    label: "push-branch-colors-fix",
+    description: "branch-colors — orange accent for fix/* glob",
+    workflow: "discord-push-branch-colors.yml",
+    fixture: "push-branch-fix.json",
+  },
 ];
 
 function fail(message) {
