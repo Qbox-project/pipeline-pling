@@ -74,6 +74,7 @@ function runAct(scenario) {
       fixturePath,
       "--secret-file",
       secretsFile,
+      "--use-gitignore=false",
     ],
     {
       cwd: rootDir,
