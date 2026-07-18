@@ -1,290 +1,284 @@
 # Pipeline Pling
 
-Post GitHub push commit notifications to Discord using the Components V2 message API (Containers, Sections, TextDisplay, and link buttons).
+Clear, customizable Discord notifications for every GitHub push.
 
-## Features
+Pipeline Pling turns a push into a readable Discord message with the sender, branch, commits, authors, co-authors, and links back to GitHub. It uses Discord Components V2, supports per-branch styling, and includes privacy controls for teams that need them.
 
-- Modern **node24** GitHub Action runtime with a minified bundle built by the release workflow
-- Discord **Components V2** layout instead of legacy embeds
-- Actor-aware header using `sender.login` (merger/pusher), separate from commit authors
-- Per-commit lines with linked SHAs, titles, and author/co-author profile links
-- Bounded commit body excerpts for commits with descriptions
-- Per-message webhook name with higher-resolution sender avatars
-- GitHub profile links resolved from usernames or `users.noreply.github.com` emails
-- Anonymous commit support via a configurable keyword (default `!anon`)
-- Silent commit support via a configurable keyword (default `!silent`) to exclude commits from notifications
-- Branch allowlist and denylist for targeting or excluding specific branches
-- Skips empty pushes and bot pushes (configurable)
-- Clear webhook failure errors on non-2xx responses
+![A Pipeline Pling notification showing two linked commits in Discord](screenshots/default.png)
 
-## Examples
+## Why Pipeline Pling?
 
-### Default push
+- **Readable at a glance:** See who pushed, where they pushed, and what changed without opening GitHub.
+- **Useful links:** Jump directly to branches, commits, pull requests, contributor profiles, or the full comparison.
+- **Flexible delivery:** Filter branches, skip bot pushes, post into forum threads, or silence individual commits.
+- **Custom appearance:** Use repository names, sender avatars, custom names, and branch-specific accent colors.
+- **Privacy controls:** Hide links, anonymize names, or fully redact selected commits and contributors.
+- **Reliable failures:** Retry a Discord rate limit once and surface clear errors for rejected webhook requests.
 
-Linked SHAs, commit titles, author lines, per-repo accent color, and a **View changes** button.
+## Quick start
 
-![Default push notification](screenshots/default.png)
+### 1. Create a Discord webhook
 
-### Co-authored commits
+In Discord, open **Server Settings → Integrations → Webhooks**, create a webhook for the channel that should receive notifications, and copy its URL. See [Discord's webhook guide](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks) if you need help.
 
-Multi-commit pushes with linked authors, co-authors, PR references, and quoted commit bodies.
+Use the webhook URL exactly as Discord provides it. Do not add `/github`; that suffix is only for Discord's built-in GitHub integration.
 
-![Co-authored commits](screenshots/coauthors.png)
+### 2. Save the webhook as a GitHub secret
 
-### Keyword anonymization
+In your GitHub repository, open **Settings → Secrets and variables → Actions**, create a repository secret named `DISCORD_WEBHOOK_URL`, and paste in the webhook URL.
 
-Put `!anon` on the first line of the commit body to fully redact that commit. When every commit in the push is anonymous, the **View changes** button is omitted.
+### 3. Add the workflow
 
-![Keyword anonymization](screenshots/keywordanon.png)
+Create `.github/workflows/discord-push.yml` in the repository you want to watch:
 
-### Name anonymization
+```yaml
+name: Discord push notifications
 
-List GitHub usernames in `name-anon-users` to replace their display names with `Anonymous` while keeping commit details visible.
+on:
+  push:
 
-![Name anonymization](screenshots/nameanon.png)
+permissions: {}
 
-### Full anonymization
+jobs:
+  notify-discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Discord
+        uses: Qbox-project/pipeline-pling@v1.2
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+```
 
-List GitHub usernames in `full-anon-users` to fully redact any commit they author or co-author. Mixed pushes show redacted and normal commits side by side.
+That is all the action needs. You do not need to check out the repository, grant `GITHUB_TOKEN` permissions, define environment variables, or handle action outputs.
 
-![Full anonymization](screenshots/fullanon.png)
+## Configuration
 
-### Repository name override
+All inputs are optional unless marked as required.
 
-Set `repo-name` to replace the webhook username and push header repository label with a custom display name. Run `npm run act:test` scenario **`push-repo-name`** to preview.
+### Essentials
 
-![Repository name override](screenshots/reponame.png)
+| Input         | Required | Default | Description                                                                     |
+| ------------- | -------- | ------- | ------------------------------------------------------------------------------- |
+| `webhook-url` | Yes      | —       | Discord webhook URL used to send the notification. Store it as a GitHub secret. |
+| `thread-id`   | No       | —       | Discord forum thread ID to post into.                                           |
 
-### Hide links
+### Filtering
 
-Set `hide-links: true` to omit all hyperlinks — actor, branch, SHAs, PR refs, author/co-author links, and the **View changes** button. Run **`push-hide-links`** (uses the co-authored fixture so PR refs and author links are visibly stripped).
+| Input              | Required | Default   | Description                                                                       |
+| ------------------ | -------- | --------- | --------------------------------------------------------------------------------- |
+| `skip-bots`        | No       | `true`    | Skip pushes made by bot accounts.                                                 |
+| `silent-keyword`   | No       | `!silent` | Omit a commit when this is the first non-empty line of its commit body.           |
+| `branch-allowlist` | No       | —         | Comma-separated branch names to include. Names use case-sensitive exact matching. |
+| `branch-denylist`  | No       | —         | Comma-separated branch names to exclude. Names use case-sensitive exact matching. |
 
-![Hide links](screenshots/hidelinks.png)
+When both branch lists are set, a branch must appear in the allowlist and not appear in the denylist. Empty lists are ignored.
 
-### Branch colors
+### Appearance
 
-Set `branch-colors` with `pattern=#RRGGBB` entries to pick the container accent color by branch. The act scenarios **`push-branch-colors-main`**, **`push-branch-colors-develop`**, and **`push-branch-colors-fix`** preview green (`main`), red (`develop`), and orange (`fix/*`) on the same commit payload.
+| Input               | Required | Default          | Description                                                                                                      |
+| ------------------- | -------- | ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `accent-color`      | No       | Repository color | Accent color as `#RRGGBB` or `RRGGBB`. Invalid values fall back to a color derived from the repository name.     |
+| `branch-colors`     | No       | —                | Per-branch colors as `pattern=#RRGGBB` entries separated by commas or newlines. The first matching pattern wins. |
+| `use-sender-avatar` | No       | `true`           | Use the push sender's GitHub avatar as the webhook avatar.                                                       |
+| `use-repo-username` | No       | `true`           | Use the repository name as the webhook username.                                                                 |
+| `repo-name`         | No       | Repository name  | Override the repository label and webhook username, up to Discord's 80-character limit.                          |
+| `hide-links`        | No       | `false`          | Remove actor, branch, commit, pull request, and profile links, plus the **View changes** button.                 |
 
-![Branch colors](screenshots/branchcolors.png)
+Branch color patterns are case-sensitive. `*` matches one path segment, while `**` can match across segments. A matching `branch-colors` rule takes priority over `accent-color`.
 
-### Silent commits
+### Privacy
 
-Put `!silent` on the first line of the commit body to exclude that commit from the Discord notification entirely. When every commit in the push is silent, the webhook is not called.
+| Input             | Required | Default | Description                                                                                                |
+| ----------------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `anon-keyword`    | No       | `!anon` | Fully redact a commit when this is the first non-empty line of its commit body.                            |
+| `name-anon-users` | No       | —       | Comma-separated GitHub usernames whose names are shown as `Anonymous` while commit details remain visible. |
+| `full-anon-users` | No       | —       | Comma-separated GitHub usernames whose authored or co-authored commits are fully redacted.                 |
+
+Username matching is case-insensitive and ignores empty entries.
+
+## Common recipes
+
+### Post into a Discord forum thread
+
+Store the thread ID as a GitHub Actions variable and pass it alongside the webhook:
+
+```yaml
+with:
+  webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  thread-id: ${{ vars.DISCORD_THREAD_ID }}
+```
+
+### Filter and color branches
+
+Only notify for `main`, `develop`, and two selected fix branches, while giving each branch family its own color:
+
+```yaml
+with:
+  webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  branch-allowlist: main,develop,fix/login,fix/inventory
+  branch-colors: |
+    main=#22c55e
+    develop=#ef4444
+    fix/*=#f97316
+```
+
+The allowlist uses exact branch names; only `branch-colors` supports glob patterns.
+
+### Customize the notification identity
+
+```yaml
+with:
+  webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  repo-name: My Project
+  accent-color: "#F1E542"
+```
+
+To keep the name or avatar configured on the Discord webhook instead, disable either override:
+
+```yaml
+with:
+  webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  use-repo-username: false
+  use-sender-avatar: false
+```
+
+### Silence a commit
+
+Put `!silent` on the first non-empty line after the commit title:
 
 ```text
-chore(deps): bump lockfile
+chore(deps): update the lockfile
 
 !silent
 ```
 
-When only some commits are silent, the notification shows only the remaining commits and uses the filtered commit count in the header (e.g. "is pushing 1 commit" when one non-silent commit remains).
+The commit is left out of the Discord message. If every commit in a push is silent, no webhook is sent.
 
-## Usage
+### Anonymize a commit or contributor
 
-```yaml
-- name: Notify Discord
-  uses: qbox-project/pipeline-pling@v1
-  with:
-    webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-    thread-id: ${{ vars.DISCORD_THREAD_ID }} # optional
-    skip-bots: true # default
-    anon-keyword: '!anon' # default
-    silent-keyword: '!silent' # default
-    branch-allowlist: 'main,develop' # optional
-    branch-denylist: 'dependabot' # optional
-    accent-color: '#F1E542' # optional
-    use-sender-avatar: true # default
-    use-repo-username: true # default
-    repo-name: 'My Project' # optional display name override
-    hide-links: false # default; set true to omit all hyperlinks
-    branch-colors: |
-      main=#22c55e
-      develop=#ef4444
-      fix/*=#f97316
-    name-anon-users: 'alice,bob' # optional
-    full-anon-users: 'secret-user' # optional
-```
-
-## Inputs
-
-| Input | Required | Default | Description |
-| --- | --- | --- | --- |
-| `webhook-url` | yes | | Full Discord webhook URL |
-| `thread-id` | no | | Optional forum thread ID |
-| `skip-bots` | no | `true` | Skip notifications for bot senders |
-| `anon-keyword` | no | `!anon` | Keyword that marks a commit as anonymous in Discord output |
-| `silent-keyword` | no | `!silent` | Keyword that excludes a commit from Discord notifications |
-| `branch-allowlist` | no | | Comma-separated branch names; when set, only notify for pushes to these branches (case-sensitive exact match) |
-| `branch-denylist` | no | | Comma-separated branch names; when set, skip notifications for pushes to these branches (case-sensitive exact match) |
-| `accent-color` | no | | Optional hex accent color for the container (e.g. `#F1E542` or `F1E542`). Overridden by `branch-colors` when a pattern matches. Invalid values log a warning and fall back to a deterministic hash color from the repository name |
-| `use-sender-avatar` | no | `true` | When `false`, omit `avatar_url` so Discord uses the webhook's configured avatar |
-| `use-repo-username` | no | `true` | When `false`, omit `username` so Discord uses the webhook's configured name |
-| `repo-name` | no | | Optional display name override for the webhook username and push header repository label (truncated to 80 characters). Empty or omitted uses the repository name as today |
-| `hide-links` | no | `false` | When `true`, omit all hyperlinks from the notification (actor, branch, SHAs, PR refs, author/co-author links, and the View changes button) |
-| `branch-colors` | no | | Per-branch accent colors as `pattern=#RRGGBB` entries separated by commas and/or newlines. First matching pattern wins (case-sensitive glob matching: `*` for one path segment, `**` across segments). Invalid hex values are skipped with a warning |
-| `name-anon-users` | no | | Comma-separated GitHub usernames whose display names are anonymized in the header, commit author lines, and co-author lines |
-| `full-anon-users` | no | | Comma-separated GitHub usernames whose commits are fully redacted when they are the author or a co-author |
-
-## Anonymization
-
-Pipeline Pling supports three complementary anonymization modes. They can be combined in the same workflow.
-
-### Keyword anonymization (`anon-keyword`)
-
-If a commit message puts the anonymous keyword on the first line of the commit body, Discord output redacts the commit title, body, SHA, links, and all author/co-author/committer details. Anonymous commits render as `` `Anonymous commit` ``.
-
-Example:
+Use `!anon` in the same position to fully redact one commit:
 
 ```text
-fix(items.lua): typo but also no
+fix(items.lua): correct an internal issue
 
 !anon
 ```
 
-When every commit in the push is anonymous, commit details are still redacted and the **View changes** button is omitted.
-
-When only some commits are anonymous, non-anonymous commits render normally, but branch and compare links are still omitted so anonymous commits cannot be discovered from the notification.
-
-### Name anonymization (`name-anon-users`)
-
-Provide a comma-separated list of GitHub usernames. Matching is case-insensitive and ignores empty entries.
-
-When a listed user appears as the push sender, commit author, or co-author, their display name is rendered as `Anonymous` with no profile hyperlink. Commit SHAs, titles, and descriptions still render normally unless another anonymization mode applies.
-
-When a listed user is the push sender and avatars are enabled (`use-sender-avatar: true`), the notification uses the anonymous silhouette avatar instead of their GitHub profile picture.
-
-### Full anonymization (`full-anon-users`)
-
-Provide a comma-separated list of GitHub usernames. Any commit whose author or co-author matches a listed user is fully redacted exactly like keyword anonymization: `` `Anonymous commit` `` with no SHA, title, description, or profile links.
-
-When a listed user is the push sender, the header actor becomes `**Anonymous**` (no link) and the anonymous avatar is used when avatars are enabled.
-
-A commit is treated as anonymous if **either** the keyword matches **or** the author/co-author is in the full-anon list. Mixed pushes omit the **View changes** button and use a plain branch label when any commit is anonymous.
-
-### Silent commits (`silent-keyword`)
-
-If a commit message puts the silent keyword on the first line of the commit body, that commit is excluded from the Discord notification. Silent commits are removed before the message is built; they do not appear as redacted placeholders.
-
-Example:
-
-```text
-chore(deps): bump lockfile
-
-!silent
-```
-
-When every commit in the push is silent, the action logs `All commits in push are silent; skipping.` and does not call the webhook.
-
-When only some commits are silent, the notification includes only the non-silent commits. The header uses the filtered count (singular `commit` when exactly one remains).
-
-Silent commits are independent of anonymization: a commit can be both silent and anonymous, but silent takes precedence by excluding the commit entirely.
-
-### Branch filtering (`branch-allowlist`, `branch-denylist`)
-
-Provide comma-separated branch names to control which pushes trigger notifications. Branch names are matched exactly against the parsed push ref (e.g. `refs/heads/main` → `main`). Matching is **case-sensitive**.
-
-- **`branch-allowlist`**: when non-empty, only pushes to listed branches notify.
-- **`branch-denylist`**: when non-empty, pushes to listed branches are skipped.
-
-When both are set, a branch must pass the allowlist **and** not be in the denylist. An empty or omitted list is ignored.
-
-### Per-branch accent colors (`branch-colors`)
-
-Provide `pattern=#RRGGBB` entries separated by commas and/or newlines to set the container accent color by branch. Matching is **case-sensitive** and uses simple globs: `*` matches one path segment, `**` matches across segments.
-
-Example:
+You can also configure privacy rules by GitHub username:
 
 ```yaml
-branch-colors: |
-  main=#22c55e
-  develop=#ef4444
-  fix/*=#f97316
+with:
+  webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  name-anon-users: alice,bob
+  full-anon-users: sensitive-contributor
 ```
 
-Resolution order for the container accent color:
+- `name-anon-users` replaces matching sender, author, and co-author names with `Anonymous`, but leaves the commit visible.
+- `full-anon-users` fully redacts commits authored or co-authored by a matching user.
+- If the push sender is on either anonymity list, their profile link is removed and an anonymous avatar is used when sender avatars are enabled.
+- If any commit is fully anonymous, branch and comparison links are removed so the notification cannot reveal the redacted commit indirectly.
+- A commit that is both silent and anonymous is omitted; silence takes precedence.
 
-1. First matching `branch-colors` pattern for the push branch (declaration order)
-2. `accent-color` input when valid
-3. Deterministic hash color from the repository name
+### Hide every GitHub link
 
-Invalid hex values in a `branch-colors` entry are skipped with a warning; the action does not fail.
+```yaml
+with:
+  webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  hide-links: true
+```
+
+The notification keeps its text while removing all hyperlinks and the **View changes** button.
+
+## More examples
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Co-authored commits</strong><br>
+      <img src="screenshots/coauthors.png" width="420" alt="Discord notification showing commits with authors and co-authors">
+    </td>
+    <td align="center">
+      <strong>Keyword anonymization</strong><br>
+      <img src="screenshots/keywordanon.png" width="420" alt="Discord notification showing a fully redacted anonymous commit">
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Name anonymization</strong><br>
+      <img src="screenshots/nameanon.png" width="420" alt="Discord notification showing anonymous contributor names with visible commit details">
+    </td>
+    <td align="center">
+      <strong>Full anonymization</strong><br>
+      <img src="screenshots/fullanon.png" width="420" alt="Discord notification containing one visible commit and one fully redacted commit">
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Custom repository name</strong><br>
+      <img src="screenshots/reponame.png" width="420" alt="Discord notification using a custom repository display name">
+    </td>
+    <td align="center">
+      <strong>Links hidden</strong><br>
+      <img src="screenshots/hidelinks.png" width="420" alt="Discord notification with plain text and no GitHub hyperlinks">
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <strong>Per-branch colors</strong><br>
+      <img src="screenshots/branchcolors.png" width="520" alt="Discord notifications using green, red, and orange accents for different branches">
+    </td>
+  </tr>
+</table>
+
+## Security and permissions
+
+Treat the Discord webhook URL like a password. Store it in a GitHub Actions secret, never commit it, and rotate it in Discord if it is exposed.
+
+Pipeline Pling reads the `push` event payload supplied by GitHub and sends the rendered message to your configured Discord webhook. It does not require `GITHUB_TOKEN` permissions or a checked-out copy of your repository.
+
+The `@v1.2` tag in the quick-start example stays on the 1.2 release line. For an immutable dependency, replace `@v1.2` with the full commit SHA for the release you have reviewed. GitHub describes full-length SHA pinning as the most secure way to consume a third-party action in its [secure use guidance](https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions).
+
+## Troubleshooting
+
+### The workflow ran, but no message appeared
+
+Check the action log for a skip reason. Pipeline Pling intentionally skips non-push events, empty pushes, bot pushes when `skip-bots` is enabled, branches excluded by your filters, and pushes where every commit is silent.
+
+Branch allowlists and denylists use case-sensitive exact matching. For example, `Develop` does not match `develop`, and `fix/*` is only supported by `branch-colors`, not the branch allowlist.
+
+### Discord rejected the webhook
+
+Copy a fresh webhook URL from Discord and update `DISCORD_WEBHOOK_URL`. Do not append `/github`. A deleted webhook or a webhook copied with the wrong suffix commonly returns a `401` or `404` response.
+
+If Discord rate-limits a request, the action waits for the requested delay, up to 30 seconds, and retries once. A second failure ends the workflow with Discord's response status and message.
+
+### The accent color did not apply
+
+Check the workflow log for a warning. Colors must contain exactly six hexadecimal digits, with an optional leading `#`. Invalid values are ignored, and the action falls back to `accent-color` or the repository-derived color.
 
 ## Development
+
+Install dependencies and run the full check locally:
 
 ```bash
 npm ci
 npm run check
 ```
 
-`npm run check` runs typecheck, Vitest, and esbuild. The `dist/` directory is gitignored; when you publish a GitHub release, the release workflow builds a minified `dist/index.js`, commits it to the release tag, and updates the floating major tag (e.g. `v1`).
-
-### Releasing
-
-1. Create a GitHub release with a semver tag such as `v1.2.3`.
-2. The release workflow runs typecheck, tests, and a minified build, then commits `dist/index.js` to the release tag and force-pushes it.
-3. The workflow also force-updates the floating major tag (e.g. `v1.2.3` → `v1`) so consumers can pin `@v1`.
-
-## Local workflow testing with act
-
-[`act`](https://github.com/nektos/act) runs GitHub Actions locally in Docker, so you can test the Discord workflow without pushing.
-
-On Windows, install `act` with one of:
-
-```powershell
-winget install nektos.act
-# or
-choco install act-cli
-```
-
-Create a local secret file and add your Discord webhook URL:
-
-```powershell
-Copy-Item .secrets.example .secrets
-notepad .secrets
-```
-
-The `.secrets` file is gitignored. Do not commit real webhook URLs.
-
-Run all local workflow fixtures with one command:
+To exercise the included push fixtures against a real Discord webhook with [`act`](https://github.com/nektos/act), create `.secrets` from `.secrets.example`, add your webhook URL, and run:
 
 ```bash
 npm run act:test
 ```
 
-This builds `dist/index.js` automatically, then runs eleven scenarios sequentially through act using `.secrets`. Each scenario posts a real Discord message so you can visually inspect the output — see [Examples](#examples) for reference screenshots. The script exits non-zero if the build fails, `.secrets` is missing, or any scenario fails.
+The `.secrets` file is ignored by Git. Never commit a real webhook URL.
 
-| Scenario | Workflow | Fixture | What to look for |
-| --- | --- | --- | --- |
-| `push` | `discord-push.yml` | `push.json` | Default inputs — linked authors, repo hash accent color, sender avatar and repo username |
-| `push-anon` | `discord-push.yml` | `push-anon.json` | Keyword anonymization (`!anon`) — redacted commits, no View changes button |
-| `push-coauthors` | `discord-push.yml` | `push-coauthors.json` | Co-authored commits with linked author and co-author lines |
-| `push-name-anon` | `discord-push-name-anon.yml` | `push-name-anon.json` | `name-anon-users: ChatDisabled,WhereiamL` — Anonymous header/avatars/names, commits still visible; includes co-author |
-| `push-full-anon` | `discord-push-full-anon.yml` | `push-full-anon.json` | `full-anon-users: WhereiamL` — one fully redacted commit mixed with a normal commit |
-| `push-custom` | `discord-push-custom.yml` | `push.json` | `accent-color: #E74C3C`, `use-sender-avatar: false`, `use-repo-username: false` — red accent, webhook default name/avatar |
-| `push-repo-name` | `discord-push-repo-name.yml` | `push.json` | `repo-name: My Project` — custom webhook username and header repository label |
-| `push-hide-links` | `discord-push-hide-links.yml` | `push-coauthors.json` | `hide-links: true` — plain text only, no hyperlinks or View changes button |
-| `push-branch-colors-main` | `discord-push-branch-colors.yml` | `push.json` | `branch-colors` — green accent for `main` |
-| `push-branch-colors-develop` | `discord-push-branch-colors.yml` | `push-branch-develop.json` | `branch-colors` — red accent for `develop` |
-| `push-branch-colors-fix` | `discord-push-branch-colors.yml` | `push-branch-fix.json` | `branch-colors` — orange accent for `fix/*` glob |
+The release workflow runs the checks, builds the minified Node.js action bundle, publishes it with the release tag, and updates the floating major tag for that release.
 
-All Discord push workflows (`discord-push.yml`, `discord-push-name-anon.yml`, `discord-push-full-anon.yml`, `discord-push-custom.yml`, `discord-push-repo-name.yml`, `discord-push-hide-links.yml`, `discord-push-branch-colors.yml`) are act-only test fixtures with placeholder branch filters (`__act_only_*__`), so they never run on real pushes.
+## Support
 
-The first run may take a while because Docker pulls the local runner image.
-
-Optional direct `act` commands for debugging a single scenario:
-
-```powershell
-act push -W .github/workflows/discord-push.yml --eventpath fixtures/push.json --secret-file .secrets
-act push -W .github/workflows/discord-push-name-anon.yml --eventpath fixtures/push-name-anon.json --secret-file .secrets
-act push -W .github/workflows/discord-push-full-anon.yml --eventpath fixtures/push-full-anon.json --secret-file .secrets
-act push -W .github/workflows/discord-push-custom.yml --eventpath fixtures/push.json --secret-file .secrets
-act push -W .github/workflows/discord-push-repo-name.yml --eventpath fixtures/push.json --secret-file .secrets
-act push -W .github/workflows/discord-push-hide-links.yml --eventpath fixtures/push-coauthors.json --secret-file .secrets
-act push -W .github/workflows/discord-push-branch-colors.yml --eventpath fixtures/push.json --secret-file .secrets
-act push -W .github/workflows/discord-push-branch-colors.yml --eventpath fixtures/push-branch-develop.json --secret-file .secrets
-act push -W .github/workflows/discord-push-branch-colors.yml --eventpath fixtures/push-branch-fix.json --secret-file .secrets
-```
+Found a bug or have an idea? Join the [Qbox Discord](https://discord.gg/Z6Whda5hHA) and share the relevant workflow snippet and action log. Remove webhook URLs and other secrets before posting.
 
 ## License
 
-MIT
+Pipeline Pling is available under the [MIT License](LICENSE).

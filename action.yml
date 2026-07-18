@@ -1,60 +1,61 @@
 name: Pipeline Pling
-description: Post GitHub push commit notifications to Discord using Components V2
+author: Qbox Project
+description: Send clear, customizable GitHub push notifications to Discord.
 branding:
   icon: bell
   color: yellow
 
 inputs:
   webhook-url:
-    description: Discord webhook URL
+    description: Discord webhook URL used to send notifications.
     required: true
   thread-id:
-    description: Optional Discord forum thread ID to post into
+    description: Discord forum thread ID to post into.
     required: false
   skip-bots:
-    description: Skip notifications when the push sender is a bot
+    description: Skip pushes made by bot accounts.
     required: false
-    default: 'true'
+    default: "true"
   anon-keyword:
-    description: Commit message keyword that marks a commit as anonymous in Discord output
+    description: Commit-body keyword that fully anonymizes a commit.
     required: false
-    default: '!anon'
+    default: "!anon"
   silent-keyword:
-    description: Commit message keyword that excludes a commit from Discord notifications
+    description: Commit-body keyword that omits a commit from notifications.
     required: false
-    default: '!silent'
+    default: "!silent"
   branch-allowlist:
-    description: Comma-separated branch names; when set, only notify for pushes to these branches
+    description: Comma-separated branch names to include in notifications.
     required: false
   branch-denylist:
-    description: Comma-separated branch names; when set, skip notifications for pushes to these branches
+    description: Comma-separated branch names to exclude from notifications.
     required: false
   accent-color:
-    description: Optional hex accent color for the Discord container (e.g. #F1E542 or F1E542). Overridden by branch-colors when a pattern matches. Falls back to a deterministic hash color when omitted or invalid.
+    description: Fallback Discord accent color as #RRGGBB or RRGGBB; branch-colors takes priority.
     required: false
   use-sender-avatar:
-    description: When true, set the webhook avatar to the push sender's GitHub avatar
+    description: Use the push sender's GitHub avatar as the webhook avatar.
     required: false
-    default: 'true'
+    default: "true"
   use-repo-username:
-    description: When true, set the webhook username to the repository name
+    description: Use the repository name as the webhook username.
     required: false
-    default: 'true'
+    default: "true"
   repo-name:
-    description: Optional display name override for the webhook username and push header repository label
+    description: Override the repository label and webhook username.
     required: false
   hide-links:
-    description: When true, omit all hyperlinks from the Discord notification
+    description: Remove GitHub links and the View changes button from notifications.
     required: false
-    default: 'false'
+    default: "false"
   branch-colors:
-    description: Optional per-branch accent colors as pattern=#RRGGBB entries (comma or newline separated). First matching pattern wins.
+    description: Per-branch accent colors as pattern=#RRGGBB entries separated by commas or newlines.
     required: false
   name-anon-users:
-    description: Comma-separated GitHub usernames whose display names are anonymized (author, co-author, or pusher) while commit details remain visible
+    description: Comma-separated GitHub usernames shown as Anonymous while commit details remain visible.
     required: false
   full-anon-users:
-    description: Comma-separated GitHub usernames whose commits are fully redacted (same as the anon keyword) when they are author or co-author
+    description: Comma-separated GitHub usernames whose authored or co-authored commits are fully redacted.
     required: false
 
 runs:
