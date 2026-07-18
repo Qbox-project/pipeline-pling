@@ -63,13 +63,9 @@ Set `hide-links: true` to omit all hyperlinks — actor, branch, SHAs, PR refs, 
 
 ### Branch colors
 
-Set `branch-colors` with `pattern=#RRGGBB` entries to pick the container accent color by branch. Run **`push-branch-colors-main`**, **`push-branch-colors-develop`**, or **`push-branch-colors-fix`** to preview green (`main`), red (`develop`), and orange (`fix/*`) accents on the same commit payload.
+Set `branch-colors` with `pattern=#RRGGBB` entries to pick the container accent color by branch. The act scenarios **`push-branch-colors-main`**, **`push-branch-colors-develop`**, and **`push-branch-colors-fix`** preview green (`main`), red (`develop`), and orange (`fix/*`) on the same commit payload.
 
-![Branch colors (main)](screenshots/branchcolors-main.png)
-
-![Branch colors (develop)](screenshots/branchcolors-develop.png)
-
-![Branch colors (fix/*)](screenshots/branchcolors-fix.png)
+![Branch colors](screenshots/branchcolors.png)
 
 ### Silent commits
 
