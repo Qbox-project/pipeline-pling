@@ -61,6 +61,12 @@ const scenarios = [
     fixture: "push-coauthors.json",
   },
   {
+    label: "push-compact",
+    description: "compact-mode — consecutive commits without descriptions or authors",
+    workflow: "discord-push-compact.yml",
+    fixture: "push-coauthors.json",
+  },
+  {
     label: "push-branch-colors-main",
     description: "branch-colors — green accent for main",
     workflow: "discord-push-branch-colors.yml",

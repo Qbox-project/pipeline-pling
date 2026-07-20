@@ -23,6 +23,7 @@ const CO_AUTHOR_REGEX = /^Co-authored-by:\s*(.+?)\s*<([^>]+)>\s*$/gim;
 const NOREPLY_EMAIL_REGEX = /^(?:\d+\+)?([^@]+)@users\.noreply\.github\.com$/i;
 const PR_REF_REGEX = /\(#(\d+)\)/g;
 const COMMIT_BLOCK_SEPARATOR = '\n\n';
+const COMPACT_COMMIT_SEPARATOR = '\n';
 
 export function parseBranch(ref: string): string {
   const prefix = 'refs/heads/';
@@ -319,6 +320,7 @@ function formatCommitLine(
   maxDescriptionLength: number,
   repoHtmlUrl: string,
   hideLinks: boolean,
+  compactMode: boolean,
 ): string {
   if (isCommitFullyAnonymous(commit, anonKeyword, fullAnonUsers)) {
     return '`Anonymous commit`';
@@ -331,6 +333,14 @@ function formatCommitLine(
     repoHtmlUrl,
     hideLinks,
   );
+  const shaText = hideLinks
+    ? `\`${shortSha}\``
+    : formatMarkdownLink(`\`${shortSha}\``, commit.url, hideLinks);
+
+  if (compactMode) {
+    return `${shaText} ${title}`;
+  }
+
   const attributionText = formatCommitAttribution(
     commit.author,
     parseCoAuthors(commit.message),
@@ -341,9 +351,6 @@ function formatCommitLine(
     commit.message,
     maxDescriptionLength,
   );
-  const shaText = hideLinks
-    ? `\`${shortSha}\``
-    : formatMarkdownLink(`\`${shortSha}\``, commit.url, hideLinks);
 
   return `${shaText} ${title}\n${attributionText}${descriptionText}`;
 }
@@ -451,6 +458,7 @@ function buildCommitLines(
   maxDescriptionLength: number,
   repoHtmlUrl: string,
   hideLinks: boolean,
+  compactMode: boolean,
 ): string[] {
   const lines: string[] = [];
 
@@ -470,6 +478,7 @@ function buildCommitLines(
         maxDescriptionLength,
         repoHtmlUrl,
         hideLinks,
+        compactMode,
       ),
     );
   }
@@ -477,12 +486,16 @@ function buildCommitLines(
   return lines;
 }
 
-function trimLinesToMaxLength(lines: string[], maxTextLength: number): string[] {
+function trimLinesToMaxLength(
+  lines: string[],
+  maxTextLength: number,
+  separator: string,
+): string[] {
   const result: string[] = [];
   let totalLength = 0;
 
   for (const line of lines) {
-    const separatorLength = result.length > 0 ? COMMIT_BLOCK_SEPARATOR.length : 0;
+    const separatorLength = result.length > 0 ? separator.length : 0;
     if (totalLength + separatorLength + line.length > maxTextLength) {
       break;
     }
@@ -502,7 +515,7 @@ function trimLinesToMaxLength(lines: string[], maxTextLength: number): string[] 
     }
 
     const notice = `+ ${remaining} more...`;
-    const separatorLength = result.length > 0 ? COMMIT_BLOCK_SEPARATOR.length : 0;
+    const separatorLength = result.length > 0 ? separator.length : 0;
 
     if (totalLength + separatorLength + notice.length <= maxTextLength) {
       result.push(notice);
@@ -518,7 +531,7 @@ function trimLinesToMaxLength(lines: string[], maxTextLength: number): string[] 
     if (result.length === 0) {
       totalLength = 0;
     } else {
-      totalLength -= COMMIT_BLOCK_SEPARATOR.length + popped.length;
+      totalLength -= separator.length + popped.length;
     }
   }
 
@@ -533,9 +546,9 @@ export function buildDiscordMessage(
   const useSenderAvatar = options.useSenderAvatar ?? true;
   const useRepoUsername = options.useRepoUsername ?? true;
   const hideLinks = options.hideLinks ?? false;
+  const compactMode = options.compactMode ?? false;
   const nameAnonUsers = (options.nameAnonUsers ?? []).map((user) => user.toLowerCase());
   const fullAnonUsers = (options.fullAnonUsers ?? []).map((user) => user.toLowerCase());
-  const maxCommits = options.maxCommits ?? DEFAULT_MAX_COMMITS;
   const maxTextLength = options.maxTextLength ?? DEFAULT_MAX_TEXT_LENGTH;
   const maxTitleLength = options.maxTitleLength ?? DEFAULT_MAX_TITLE_LENGTH;
   const maxDescriptionLength =
@@ -543,6 +556,8 @@ export function buildDiscordMessage(
 
   const branch = parseBranch(payload.ref);
   const commits = payload.commits;
+  const maxCommits =
+    options.maxCommits ?? (compactMode ? commits.length : DEFAULT_MAX_COMMITS);
   const hasAnonymous = commits.some((commit) =>
     isCommitFullyAnonymous(commit, anonKeyword, fullAnonUsers),
   );
@@ -574,11 +589,17 @@ export function buildDiscordMessage(
     maxDescriptionLength,
     payload.repository.html_url,
     hideLinks,
+    compactMode,
   );
   const commitTextBudget = Math.max(0, maxTextLength - header.length);
-  const commitContent = trimLinesToMaxLength(lines, commitTextBudget).join(
-    COMMIT_BLOCK_SEPARATOR,
-  );
+  const commitSeparator = compactMode
+    ? COMPACT_COMMIT_SEPARATOR
+    : COMMIT_BLOCK_SEPARATOR;
+  const commitContent = trimLinesToMaxLength(
+    lines,
+    commitTextBudget,
+    commitSeparator,
+  ).join(commitSeparator);
 
   const containerComponents: DiscordComponentsMessage['components'][0]['components'] =
     [

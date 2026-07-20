@@ -1,6 +1,6 @@
 {
   "name": "pipeline-pling",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "Post GitHub push commit notifications to Discord using Components V2",
   "license": "MIT",

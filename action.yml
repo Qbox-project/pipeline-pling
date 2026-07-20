@@ -48,6 +48,10 @@ inputs:
     description: Remove GitHub links and the View changes button from notifications.
     required: false
     default: "false"
+  compact-mode:
+    description: Display commits on consecutive lines without descriptions or authors.
+    required: false
+    default: "false"
   branch-colors:
     description: Per-branch accent colors as pattern=#RRGGBB entries separated by commas or newlines.
     required: false

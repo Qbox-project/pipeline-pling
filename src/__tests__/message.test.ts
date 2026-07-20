@@ -536,6 +536,104 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
     expect(hasViewChangesButton(buildDiscordMessage(payload))).toBe(true);
   });
 
+  it('renders compact commits on consecutive lines without descriptions or authors', () => {
+    const secondCommitUrl =
+      'https://github.com/Qbox-project/txAdminRecipe/commit/9d369b178074f21542ce55bf447e574aae89778c';
+    const payload = makePayload({
+      commits: [
+        makeCommit({
+          message: 'fix(items.lua): typo but also no\n\nFirst commit body',
+        }),
+        makeCommit({
+          id: '9d369b178074f21542ce55bf447e574aae89778c',
+          message: `feat: add another thing
+
+Second commit body
+
+Co-authored-by: Jane Doe <123456+janedoe@users.noreply.github.com>`,
+          url: secondCommitUrl,
+        }),
+      ],
+    });
+
+    const commitContent = getCommitContent(
+      buildDiscordMessage(payload, { compactMode: true }),
+    );
+
+    expect(commitContent).toBe(
+      '[`04ea116`](https://github.com/Qbox-project/txAdminRecipe/commit/04ea116975c20db99cd710337d0bc7ce90e13a65) fix(items.lua): typo but also no' +
+        `\n[\`9d369b1\`](${secondCommitUrl}) feat: add another thing`,
+    );
+    expect(commitContent.split('\n')).toHaveLength(2);
+    expect(commitContent).not.toContain('*by*');
+    expect(commitContent).not.toContain('commit body');
+    expect(commitContent).not.toContain('Jane Doe');
+  });
+
+  it('shows every commit by default in compact mode', () => {
+    const commits = Array.from({ length: 12 }, (_, index) =>
+      makeCommit({
+        id: `${index.toString(16).padStart(7, '0')}${'a'.repeat(33)}`,
+        message: `commit ${index}`,
+      }),
+    );
+
+    const commitContent = getCommitContent(
+      buildDiscordMessage(makePayload({ commits }), { compactMode: true }),
+    );
+
+    expect(commitContent.match(/commit \d+/g)).toHaveLength(12);
+    expect(commitContent).toContain('commit 11');
+    expect(commitContent).not.toContain('more...');
+  });
+
+  it('keeps compact commit lists within the Discord text budget', () => {
+    const commits = Array.from({ length: 20 }, (_, index) =>
+      makeCommit({
+        id: `${index.toString(16).padStart(7, '0')}${'b'.repeat(33)}`,
+        message: `compact commit ${index}`,
+      }),
+    );
+    const maxTextLength = 400;
+
+    const message = buildDiscordMessage(makePayload({ commits }), {
+      compactMode: true,
+      maxTextLength,
+    });
+    const header = getHeaderContent(message);
+    const commitContent = getCommitContent(message);
+
+    expect(header.length + commitContent.length).toBeLessThanOrEqual(maxTextLength);
+    expect(commitContent).toMatch(/\n\+ \d+ more\.\.\.$/);
+  });
+
+  it('preserves anonymous commit redaction in compact mode', () => {
+    const anonymousSha = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const payload = makePayload({
+      commits: [
+        makeCommit({
+          id: anonymousSha,
+          message: 'secret change\n\n!anon',
+          url: `https://github.com/Qbox-project/txAdminRecipe/commit/${anonymousSha}`,
+        }),
+        makeCommit({
+          id: '9d369b178074f21542ce55bf447e574aae89778c',
+          message: 'visible change',
+          url: 'https://github.com/Qbox-project/txAdminRecipe/commit/9d369b178074f21542ce55bf447e574aae89778c',
+        }),
+      ],
+    });
+
+    const message = buildDiscordMessage(payload, { compactMode: true });
+    const commitContent = getCommitContent(message);
+
+    expect(commitContent).toContain('`Anonymous commit`\n');
+    expect(commitContent).toContain('visible change');
+    expect(commitContent).not.toContain('secret change');
+    expect(commitContent).not.toContain(anonymousSha.slice(0, 7));
+    expect(hasViewChangesButton(message)).toBe(false);
+  });
+
   it('redacts anonymous commits and omits sensitive details', () => {
     const payload = makePayload({
       commits: [

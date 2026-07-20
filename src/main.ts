@@ -31,6 +31,7 @@ export async function run(): Promise<void> {
   const useRepoUsername = core.getBooleanInput('use-repo-username');
   const repoName = core.getInput('repo-name');
   const hideLinks = core.getBooleanInput('hide-links');
+  const compactMode = core.getBooleanInput('compact-mode');
   const nameAnonUsers = parseUsernameList(core.getInput('name-anon-users'));
   const fullAnonUsers = parseUsernameList(core.getInput('full-anon-users'));
 
@@ -86,6 +87,7 @@ export async function run(): Promise<void> {
     useRepoUsername,
     repoName: repoName || undefined,
     hideLinks,
+    compactMode,
     nameAnonUsers,
     fullAnonUsers,
   });

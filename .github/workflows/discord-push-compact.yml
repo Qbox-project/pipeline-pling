@@ -1,0 +1,19 @@
+# act-only: compact-mode scenario (branch never pushed in CI)
+name: Discord Push Notification (act compact)
+
+on:
+  push:
+    branches: [__act_only_compact__]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Notify Discord
+        uses: ./
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          thread-id: ${{ vars.DISCORD_THREAD_ID }}
+          compact-mode: 'true'

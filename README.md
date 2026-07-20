@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Discord
-        uses: Qbox-project/pipeline-pling@v1.2
+        uses: Qbox-project/pipeline-pling@v1.3
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
 ```
@@ -83,6 +83,7 @@ When both branch lists are set, a branch must appear in the allowlist and not ap
 | `use-repo-username` | No       | `true`           | Use the repository name as the webhook username.                                                                 |
 | `repo-name`         | No       | Repository name  | Override the repository label and webhook username, up to Discord's 80-character limit.                          |
 | `hide-links`        | No       | `false`          | Remove actor, branch, commit, pull request, and profile links, plus the **View changes** button.                 |
+| `compact-mode`      | No       | `false`          | Display commits on consecutive lines with their SHA and title, without descriptions or authors.                 |
 
 Branch color patterns are case-sensitive. `*` matches one path segment, while `**` can match across segments. A matching `branch-colors` rule takes priority over `accent-color`.
 
@@ -189,6 +190,18 @@ with:
 
 The notification keeps its text while removing all hyperlinks and the **View changes** button.
 
+### Condense commit lists
+
+Use compact mode to put each SHA-and-title entry on its own consecutive line and omit commit descriptions and author attribution:
+
+```yaml
+with:
+  webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  compact-mode: true
+```
+
+Compact mode includes every commit that fits within Discord's message limit; if the list is too long, the notification shows how many additional commits were omitted.
+
 ## More examples
 
 <table>
@@ -224,6 +237,12 @@ The notification keeps its text while removing all hyperlinks and the **View cha
   </tr>
   <tr>
     <td align="center" colspan="2">
+      <strong>Compact commit list</strong><br>
+      <img src="screenshots/compact.png" width="520" alt="Compact Discord notification showing commit SHAs and titles on consecutive lines without descriptions or authors">
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
       <strong>Per-branch colors</strong><br>
       <img src="screenshots/branchcolors.png" width="520" alt="Discord notifications using green, red, and orange accents for different branches">
     </td>
@@ -236,7 +255,7 @@ Treat the Discord webhook URL like a password. Store it in a GitHub Actions secr
 
 Pipeline Pling reads the `push` event payload supplied by GitHub and sends the rendered message to your configured Discord webhook. It does not require `GITHUB_TOKEN` permissions or a checked-out copy of your repository.
 
-The `@v1.2` tag in the quick-start example stays on the 1.2 release line. For an immutable dependency, replace `@v1.2` with the full commit SHA for the release you have reviewed. GitHub describes full-length SHA pinning as the most secure way to consume a third-party action in its [secure use guidance](https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions).
+The `@v1.3` tag in the quick-start example stays on the 1.3 release line. For an immutable dependency, replace `@v1.3` with the full commit SHA for the release you have reviewed. GitHub describes full-length SHA pinning as the most secure way to consume a third-party action in its [secure use guidance](https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions).
 
 ## Troubleshooting
 

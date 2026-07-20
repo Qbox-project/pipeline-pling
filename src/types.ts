@@ -83,6 +83,7 @@ export interface BuildMessageOptions {
   useRepoUsername?: boolean;
   repoName?: string;
   hideLinks?: boolean;
+  compactMode?: boolean;
   nameAnonUsers?: string[];
   fullAnonUsers?: string[];
   maxCommits?: number;
