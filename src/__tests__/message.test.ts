@@ -4,6 +4,7 @@ import { colorFromRepoName } from '../color.js';
 import {
   buildDiscordMessage,
   buildBranchUrl,
+  escapeDiscordMarkdown,
   filterSilentCommits,
   formatCommitAttribution,
   formatCommitTitle,
@@ -137,6 +138,22 @@ describe('resolveUsername', () => {
       }),
     ).toBe('janedoe');
   });
+
+  it('rejects invalid usernames that could break generated profile links', () => {
+    expect(
+      resolveUsername({
+        name: 'Contributor',
+        email: 'attacker)@users.noreply.github.com',
+      }),
+    ).toBeUndefined();
+    expect(
+      resolveUsername({
+        name: 'Contributor',
+        email: 'contributor@example.com',
+        username: 'bad](https://example.com)',
+      }),
+    ).toBeUndefined();
+  });
 });
 
 describe('parseCoAuthors', () => {
@@ -233,6 +250,38 @@ describe('formatGitHubUser', () => {
         ['chatdisabled'],
       ),
     ).toBe('Anonymous');
+  });
+
+  it('escapes Markdown in contributor names while preserving the profile link', () => {
+    expect(
+      formatGitHubUser({
+        name: '[Admin](https://example.com) **important**',
+        email: '123456+contributor@users.noreply.github.com',
+        username: 'contributor',
+      }),
+    ).toBe(
+      '[\\[Admin\\](https://example.com) \\*\\*important\\*\\*](https://github.com/contributor)',
+    );
+  });
+});
+
+describe('escapeDiscordMarkdown', () => {
+  it('neutralizes formatting, masked links, quotes, headings, and lists', () => {
+    expect(
+      escapeDiscordMarkdown(`**bold** [masked](https://example.com)
+_italic_ ||spoiler|| \`code\`
+# heading
+> quote
+1. item`),
+    ).toBe(
+      [
+        '\\*\\*bold\\*\\* \\[masked\\](https://example.com)',
+        '\\_italic\\_ \\|\\|spoiler\\|\\| \\`code\\`',
+        '\\# heading',
+        '\\> quote',
+        '1\\. item',
+      ].join('\n'),
+    );
   });
 });
 
@@ -524,10 +573,10 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
     );
     expect(commitContent).not.toContain(' — [Whereiam]');
     expect(commitContent).toContain(
-      '> * fix(bridge/qb): correct vehicle prop/colour mapping, 12h clock and Kick loop',
+      '> \\* fix(bridge/qb): correct vehicle prop/colour mapping, 12h clock and Kick loop',
     );
     expect(commitContent).toContain(
-      '> - modSubwoofer fell back to modKit17 (nitrous) instead of modKit19',
+      '> \\- modSubwoofer fell back to modKit17 (nitrous) instead of modKit19',
     );
     expect(commitContent).not.toContain('Co-authored-by:');
     expect(commitContent).not.toContain('co-authored with');
@@ -704,7 +753,9 @@ Co-authored-by: Jane Doe <123456+janedoe@users.noreply.github.com>`,
     expect(header).toContain('`Qbox-project/txAdminRecipe/main`');
     expect(header).not.toContain(compareUrl);
     expect(commitContent).toContain('`Anonymous commit`');
-    expect(commitContent).toContain('tweak(voice.cfg): unset voice_useSendingRangeOnly');
+    expect(commitContent).toContain(
+      'tweak(voice.cfg): unset voice\\_useSendingRangeOnly',
+    );
     expect(commitContent).toContain(
       '> Following: https://github.com/AvarianKnight/pma-voice/commit/9bf911f2c8dfd7a63a0e3d9259035ca0db1368ab',
     );
@@ -821,6 +872,15 @@ Co-authored-by: Jane Doe <123456+janedoe@users.noreply.github.com>`,
     expect(header).toContain(
       '[`My Project/main`](https://github.com/Qbox-project/txAdminRecipe/tree/main)',
     );
+  });
+
+  it('keeps Markdown-like repository labels inside an inline code span', () => {
+    const message = buildDiscordMessage(makePayload(), {
+      repoName: 'Project` **admin**',
+    });
+    const header = getHeaderContent(message);
+
+    expect(header).toContain('``Project` **admin**/main``');
   });
 
   it('omits hyperlinks when hideLinks is true', () => {
@@ -989,7 +1049,9 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
 
     expect(header).toContain('`Qbox-project/txAdminRecipe/main`');
     expect(commitContent).toContain('`Anonymous commit`');
-    expect(commitContent).toContain('tweak(voice.cfg): unset voice_useSendingRangeOnly');
+    expect(commitContent).toContain(
+      'tweak(voice.cfg): unset voice\\_useSendingRangeOnly',
+    );
     expect(commitContent).not.toContain('secret change from full-anon user');
     expect(hasViewChangesButton(message)).toBe(false);
   });
@@ -1226,6 +1288,17 @@ describe('linkPrReferences', () => {
   it('strips trailing slash from repo URL', () => {
     expect(linkPrReferences('fix (#99)', `${repoUrl}/`)).toBe(
       'fix ([#99](https://github.com/Qbox-project/qbx_core/pull/99))',
+    );
+  });
+
+  it('escapes untrusted title Markdown while preserving generated PR links', () => {
+    expect(
+      linkPrReferences(
+        '**urgent** [review this](https://example.com) (#42)',
+        repoUrl,
+      ),
+    ).toBe(
+      '\\*\\*urgent\\*\\* \\[review this\\](https://example.com) ([#42](https://github.com/Qbox-project/qbx_core/pull/42))',
     );
   });
 });

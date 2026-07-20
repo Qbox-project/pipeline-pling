@@ -21,6 +21,7 @@ const DISCORD_WEBHOOK_USERNAME_MAX_LENGTH = 80;
 const GITHUB_AVATAR_SIZE = 256;
 const CO_AUTHOR_REGEX = /^Co-authored-by:\s*(.+?)\s*<([^>]+)>\s*$/gim;
 const NOREPLY_EMAIL_REGEX = /^(?:\d+\+)?([^@]+)@users\.noreply\.github\.com$/i;
+const GITHUB_USERNAME_REGEX = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
 const PR_REF_REGEX = /\(#(\d+)\)/g;
 const COMMIT_BLOCK_SEPARATOR = '\n\n';
 const COMPACT_COMMIT_SEPARATOR = '\n';
@@ -38,11 +39,12 @@ export function buildBranchUrl(repoHtmlUrl: string, branch: string): string {
 
 export function resolveUsername(user: GitHubUser): string | undefined {
   if (user.username) {
-    return user.username;
+    return GITHUB_USERNAME_REGEX.test(user.username) ? user.username : undefined;
   }
 
   const match = user.email.match(NOREPLY_EMAIL_REGEX);
-  return match?.[1];
+  const username = match?.[1];
+  return username && GITHUB_USERNAME_REGEX.test(username) ? username : undefined;
 }
 
 export function parseUsernameList(input: string): string[] {
@@ -87,12 +89,17 @@ export function formatGitHubUser(
     return 'Anonymous';
   }
 
+  const displayName = escapeDiscordMarkdown(user.name);
   const username = resolveUsername(user);
   if (username) {
-    return formatMarkdownLink(user.name, `https://github.com/${username}`, hideLinks);
+    return formatMarkdownLink(
+      displayName,
+      `https://github.com/${username}`,
+      hideLinks,
+    );
   }
 
-  return user.name;
+  return displayName;
 }
 
 export function isMeaningfullyDifferent(
@@ -159,6 +166,28 @@ export function truncate(text: string, maxLength: number): string {
   return `${text.slice(0, maxLength - 3)}...`;
 }
 
+export function escapeDiscordMarkdown(text: string): string {
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/([`*_~|\[\]<>])/g, '\\$1')
+    .replace(/^([#>-])/gm, '\\$1')
+    .replace(/^(\d+)\./gm, '$1\\.');
+}
+
+function formatInlineCode(text: string): string {
+  const normalized = text.replace(/\r?\n/g, ' ');
+  const backtickRuns = normalized.match(/`+/g) ?? [];
+  const fenceLength = Math.max(
+    1,
+    ...backtickRuns.map((run) => run.length + 1),
+  );
+  const fence = '`'.repeat(fenceLength);
+  const needsPadding = normalized.startsWith('`') || normalized.endsWith('`');
+  const content = needsPadding ? ` ${normalized} ` : normalized;
+
+  return `${fence}${content}${fence}`;
+}
+
 export function formatMarkdownLink(
   label: string,
   url: string,
@@ -173,13 +202,20 @@ export function linkPrReferences(
   hideLinks: boolean = false,
 ): string {
   const repoUrl = repoHtmlUrl.replace(/\/$/, '');
-  return title.replace(
-    PR_REF_REGEX,
-    (_, num) =>
-      hideLinks
-        ? `(#${num})`
-        : `([#${num}](${repoUrl}/pull/${num}))`,
-  );
+  let result = '';
+  let cursor = 0;
+
+  for (const match of title.matchAll(PR_REF_REGEX)) {
+    const index = match.index ?? cursor;
+    const number = match[1];
+    result += escapeDiscordMarkdown(title.slice(cursor, index));
+    result += hideLinks
+      ? `(#${number})`
+      : `([#${number}](${repoUrl}/pull/${number}))`;
+    cursor = index + match[0].length;
+  }
+
+  return result + escapeDiscordMarkdown(title.slice(cursor));
 }
 
 export function formatCommitTitle(
@@ -305,7 +341,7 @@ function formatCommitDescription(message: string, maxDescriptionLength: number):
 
   const quoted = description
     .split(/\r?\n/)
-    .map((line) => `> ${line}`)
+    .map((line) => `> ${escapeDiscordMarkdown(line)}`)
     .join('\n');
 
   return `\n${quoted}`;
@@ -385,12 +421,13 @@ function buildHeader(
     ? resolveRepositoryDisplayName(payload, repoNameOverride)
     : payload.repository.full_name;
   const branchUrl = buildBranchUrl(payload.repository.html_url, branch);
-  const branchText = `\`${repo}/${branch}\``;
+  const branchText = formatInlineCode(`${repo}/${branch}`);
   const branchLabel =
     hideLinks || hasAnonymous
       ? branchText
       : formatMarkdownLink(branchText, branchUrl, hideLinks);
   const commitLabel = commitCount === 1 ? 'commit' : 'commits';
+  const senderLabel = escapeDiscordMarkdown(payload.sender.login);
   const actor = isSenderAnonymized(
     payload.sender.login,
     nameAnonUsers,
@@ -398,8 +435,8 @@ function buildHeader(
   )
     ? '**Anonymous**'
     : hideLinks
-      ? `**${payload.sender.login}**`
-      : `**[${payload.sender.login}](https://github.com/${payload.sender.login})**`;
+      ? `**${senderLabel}**`
+      : `**[${senderLabel}](https://github.com/${payload.sender.login})**`;
 
   return `${actor} is pushing ${commitCount} ${commitLabel} to ${branchLabel}`;
 }

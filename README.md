@@ -255,6 +255,8 @@ Treat the Discord webhook URL like a password. Store it in a GitHub Actions secr
 
 Pipeline Pling reads the `push` event payload supplied by GitHub and sends the rendered message to your configured Discord webhook. It does not require `GITHUB_TOKEN` permissions or a checked-out copy of your repository.
 
+Commit titles, descriptions, contributor names, and branch labels are treated as untrusted text and cannot inject structural Discord Markdown. Pipeline Pling's own GitHub links remain interactive, while `allowed_mentions` prevents commit content from notifying Discord users or roles.
+
 ### Choose a version
 
 The quick-start example uses `@v1`, the recommended option for most users. This floating major tag points to the latest compatible release in the v1 series, so your workflow receives non-breaking features, fixes, and security updates automatically. Breaking changes will be released under a new major tag such as `@v2`.
