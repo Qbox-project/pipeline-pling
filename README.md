@@ -264,7 +264,7 @@ The quick-start example uses `@v1`, the recommended option for most users. This 
 Choose the level of update control that fits your project:
 
 - `Qbox-project/pipeline-pling@v1` — recommended; follows the latest compatible v1 release.
-- `Qbox-project/pipeline-pling@v1.3.0` — stays on a specific release until you update it manually.
+- `Qbox-project/pipeline-pling@v1.4.0` — stays on a specific release until you update it manually.
 - `Qbox-project/pipeline-pling@<full-commit-sha>` — pins the exact reviewed code and provides the strongest protection against a tag being moved.
 
 GitHub recommends major tags for convenient action versioning and full-length commit SHAs when immutability is required. See GitHub's guidance on [managing custom actions](https://docs.github.com/en/actions/how-tos/create-and-publish-actions/manage-custom-actions) and [secure use of third-party actions](https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions).
@@ -306,7 +306,7 @@ The `.secrets` file is ignored by Git. Never commit a real webhook URL.
 
 ### Releasing
 
-Publish a GitHub release with a tag that exactly matches the version in `package.json`, prefixed with `v` (for example, package version `1.3.0` uses tag `v1.3.0`). The release workflow validates the tag, runs all checks, builds the minified Node.js action bundle, commits the bundle to the release tag, and updates the floating major tag.
+Publish a GitHub release with a tag that exactly matches the version in `package.json`, prefixed with `v` (for example, package version `1.4.0` uses tag `v1.4.0`). The release workflow validates the tag, runs all checks, builds the minified Node.js action bundle, commits the bundle to the release tag, and updates the floating major tag.
 
 This workflow intentionally moves the release tag to the generated build commit after the release is published, so it requires mutable GitHub releases. Before enabling immutable releases, change the process to build `dist/index.js` into the release commit before creating its tag.
 
