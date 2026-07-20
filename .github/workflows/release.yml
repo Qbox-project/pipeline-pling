@@ -7,9 +7,14 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   build-and-tag:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,6 +25,18 @@ jobs:
         with:
           node-version: 24
           cache: npm
+
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          EXPECTED_TAG="v${PACKAGE_VERSION}"
+
+          if [[ "$RELEASE_TAG" != "$EXPECTED_TAG" ]]; then
+            echo "::error::Release tag ${RELEASE_TAG} does not match package version ${PACKAGE_VERSION}; expected ${EXPECTED_TAG}."
+            exit 1
+          fi
 
       - run: npm ci
 
@@ -32,12 +49,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f dist/index.js
-          git commit -m "build: add dist for ${RELEASE_TAG}"
+
+          if git diff --cached --quiet; then
+            echo "dist/index.js is already current for ${RELEASE_TAG}."
+          else
+            git commit -m "build: add dist for ${RELEASE_TAG}"
+          fi
+
           git tag -f "$RELEASE_TAG"
           git push origin "$RELEASE_TAG" --force
 
-          if [[ "$RELEASE_TAG" =~ ^v[0-9] ]]; then
-            MAJOR_TAG="${RELEASE_TAG%%.*}"
-            git tag -f "$MAJOR_TAG"
-            git push origin "$MAJOR_TAG" --force
-          fi
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          MAJOR_TAG="v${PACKAGE_VERSION%%.*}"
+          git tag -f "$MAJOR_TAG"
+          git push origin "$MAJOR_TAG" --force

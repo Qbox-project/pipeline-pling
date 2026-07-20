@@ -302,7 +302,11 @@ npm run act:test
 
 The `.secrets` file is ignored by Git. Never commit a real webhook URL.
 
-The release workflow runs the checks, builds the minified Node.js action bundle, publishes it with the release tag, and updates the floating major tag for that release.
+### Releasing
+
+Publish a GitHub release with a tag that exactly matches the version in `package.json`, prefixed with `v` (for example, package version `1.3.0` uses tag `v1.3.0`). The release workflow validates the tag, runs all checks, builds the minified Node.js action bundle, commits the bundle to the release tag, and updates the floating major tag.
+
+This workflow intentionally moves the release tag to the generated build commit after the release is published, so it requires mutable GitHub releases. Before enabling immutable releases, change the process to build `dist/index.js` into the release commit before creating its tag.
 
 ## Support
 
