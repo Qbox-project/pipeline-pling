@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Discord
-        uses: Qbox-project/pipeline-pling@v1.3
+        uses: Qbox-project/pipeline-pling@v1
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
 ```
@@ -255,7 +255,17 @@ Treat the Discord webhook URL like a password. Store it in a GitHub Actions secr
 
 Pipeline Pling reads the `push` event payload supplied by GitHub and sends the rendered message to your configured Discord webhook. It does not require `GITHUB_TOKEN` permissions or a checked-out copy of your repository.
 
-The `@v1.3` tag in the quick-start example stays on the 1.3 release line. For an immutable dependency, replace `@v1.3` with the full commit SHA for the release you have reviewed. GitHub describes full-length SHA pinning as the most secure way to consume a third-party action in its [secure use guidance](https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions).
+### Choose a version
+
+The quick-start example uses `@v1`, the recommended option for most users. This floating major tag points to the latest compatible release in the v1 series, so your workflow receives non-breaking features, fixes, and security updates automatically. Breaking changes will be released under a new major tag such as `@v2`.
+
+Choose the level of update control that fits your project:
+
+- `Qbox-project/pipeline-pling@v1` — recommended; follows the latest compatible v1 release.
+- `Qbox-project/pipeline-pling@v1.3.0` — stays on a specific release until you update it manually.
+- `Qbox-project/pipeline-pling@<full-commit-sha>` — pins the exact reviewed code and provides the strongest protection against a tag being moved.
+
+GitHub recommends major tags for convenient action versioning and full-length commit SHAs when immutability is required. See GitHub's guidance on [managing custom actions](https://docs.github.com/en/actions/how-tos/create-and-publish-actions/manage-custom-actions) and [secure use of third-party actions](https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions).
 
 ## Troubleshooting
 
