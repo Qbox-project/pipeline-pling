@@ -464,7 +464,6 @@ function buildCommitLines(
 
   for (const [index, commit] of commits.entries()) {
     if (index >= maxCommits) {
-      lines.push(`+ ${commits.length - maxCommits} more...`);
       break;
     }
 
@@ -488,6 +487,7 @@ function buildCommitLines(
 
 function trimLinesToMaxLength(
   lines: string[],
+  totalCommitCount: number,
   maxTextLength: number,
   separator: string,
 ): string[] {
@@ -504,12 +504,12 @@ function trimLinesToMaxLength(
     result.push(line);
   }
 
-  if (result.length === lines.length) {
+  if (result.length === totalCommitCount) {
     return result;
   }
 
   while (true) {
-    const remaining = lines.length - result.length;
+    const remaining = totalCommitCount - result.length;
     if (remaining <= 0) {
       break;
     }
@@ -592,6 +592,7 @@ export function buildDiscordMessage(
     : COMMIT_BLOCK_SEPARATOR;
   const commitContent = trimLinesToMaxLength(
     lines,
+    commits.length,
     commitTextBudget,
     commitSeparator,
   ).join(commitSeparator);

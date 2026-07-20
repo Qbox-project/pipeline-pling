@@ -735,6 +735,29 @@ Co-authored-by: Jane Doe <123456+janedoe@users.noreply.github.com>`,
     expect(commitContent).toContain('+ 2 more...');
   });
 
+  it('counts all omitted commits when both the list cap and text budget apply', () => {
+    const commits = Array.from({ length: 12 }, (_, index) =>
+      makeCommit({
+        id: `${index.toString().padStart(40, '0')}`,
+        message: `budgeted commit ${index}`,
+      }),
+    );
+
+    const commitContent = getCommitContent(
+      buildDiscordMessage(makePayload({ commits }), {
+        maxCommits: 10,
+        maxTextLength: 538,
+      }),
+    );
+    const commitBlocks = commitContent.split('\n\n');
+    const displayedCommits = commitBlocks.filter((block) => !block.startsWith('+ '));
+    const omittedMatch = commitContent.match(/\+ (\d+) more\.\.\.$/);
+
+    expect(displayedCommits.length).toBeLessThan(10);
+    expect(omittedMatch).not.toBeNull();
+    expect(Number(omittedMatch?.[1])).toBe(commits.length - displayedCommits.length);
+  });
+
   it('uses a custom accent color when provided', () => {
     const message = buildDiscordMessage(makePayload(), { accentColor: 0xff00aa });
 
