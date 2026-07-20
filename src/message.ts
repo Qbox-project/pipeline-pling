@@ -375,7 +375,7 @@ function buildHeader(
   payload: PushPayload,
   branch: string,
   commitCount: number,
-  hasMixedAnonymous: boolean,
+  hasAnonymous: boolean,
   nameAnonUsers: string[],
   fullAnonUsers: string[],
   repoNameOverride?: string,
@@ -387,7 +387,7 @@ function buildHeader(
   const branchUrl = buildBranchUrl(payload.repository.html_url, branch);
   const branchText = `\`${repo}/${branch}\``;
   const branchLabel =
-    hideLinks || hasMixedAnonymous
+    hideLinks || hasAnonymous
       ? branchText
       : formatMarkdownLink(branchText, branchUrl, hideLinks);
   const commitLabel = commitCount === 1 ? 'commit' : 'commits';
@@ -561,11 +561,6 @@ export function buildDiscordMessage(
   const hasAnonymous = commits.some((commit) =>
     isCommitFullyAnonymous(commit, anonKeyword, fullAnonUsers),
   );
-  const hasMixedAnonymous =
-    hasAnonymous &&
-    !commits.every((commit) =>
-      isCommitFullyAnonymous(commit, anonKeyword, fullAnonUsers),
-    );
 
   const repoNameOverride = options.repoName?.trim() || undefined;
 
@@ -573,7 +568,7 @@ export function buildDiscordMessage(
     payload,
     branch,
     commits.length,
-    hasMixedAnonymous,
+    hasAnonymous,
     nameAnonUsers,
     fullAnonUsers,
     repoNameOverride,

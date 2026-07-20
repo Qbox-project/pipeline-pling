@@ -656,9 +656,8 @@ Co-authored-by: Jane Doe <123456+janedoe@users.noreply.github.com>`,
     const serialized = JSON.stringify(message);
 
     expect(header).toContain('[ChatDisabled](https://github.com/ChatDisabled)');
-    expect(header).toContain(
-      '[`Qbox-project/txAdminRecipe/main`](https://github.com/Qbox-project/txAdminRecipe/tree/main)',
-    );
+    expect(header).toContain('`Qbox-project/txAdminRecipe/main`');
+    expect(header).not.toContain('/tree/main');
     expect(message.avatar_url).toBe('https://avatars.githubusercontent.com/u/44729807?v=4&s=256');
     expect(commitContent).toContain('`Anonymous commit`');
     expect(commitContent).not.toContain('Anonymous commit #');
