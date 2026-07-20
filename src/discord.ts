@@ -8,6 +8,8 @@ export interface SendDiscordWebhookOptions {
 
 const MAX_RETRY_WAIT_SECONDS = 30;
 const DEFAULT_RETRY_WAIT_SECONDS = 1;
+const REQUEST_TIMEOUT_MS = 15_000;
+const MAX_ATTEMPTS = 2;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -50,7 +52,16 @@ async function postWebhook(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(message),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
+}
+
+function isTransientStatus(status: number): boolean {
+  return status >= 500 && status <= 599;
+}
+
+function formatRequestError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 export async function sendDiscordWebhook(
@@ -64,15 +75,39 @@ export async function sendDiscordWebhook(
     url.searchParams.set('thread_id', options.threadId);
   }
 
-  let response = await postWebhook(url, options.message);
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    let response: Response;
 
-  if (response.status === 429) {
-    const waitMs = await resolveRateLimitWaitMs(response);
-    await sleep(waitMs);
-    response = await postWebhook(url, options.message);
-  }
+    try {
+      response = await postWebhook(url, options.message);
+    } catch (error) {
+      if (attempt < MAX_ATTEMPTS) {
+        await sleep(DEFAULT_RETRY_WAIT_SECONDS * 1000);
+        continue;
+      }
 
-  if (!response.ok) {
+      throw new Error(
+        `Discord webhook request failed after ${MAX_ATTEMPTS} attempts: ${formatRequestError(error)}`,
+        { cause: error },
+      );
+    }
+
+    if (response.ok) {
+      return;
+    }
+
+    if (
+      attempt < MAX_ATTEMPTS &&
+      (response.status === 429 || isTransientStatus(response.status))
+    ) {
+      const waitMs =
+        response.status === 429
+          ? await resolveRateLimitWaitMs(response)
+          : DEFAULT_RETRY_WAIT_SECONDS * 1000;
+      await sleep(waitMs);
+      continue;
+    }
+
     const body = await response.text();
     throw new Error(
       `Discord webhook request failed with ${response.status} ${response.statusText}: ${body}`,

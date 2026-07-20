@@ -279,7 +279,7 @@ Branch allowlists and denylists use case-sensitive exact matching. For example, 
 
 Copy a fresh webhook URL from Discord and update `DISCORD_WEBHOOK_URL`. Do not append `/github`. A deleted webhook or a webhook copied with the wrong suffix commonly returns a `401` or `404` response.
 
-If Discord rate-limits a request, the action waits for the requested delay, up to 30 seconds, and retries once. A second failure ends the workflow with Discord's response status and message.
+Webhook requests time out after 15 seconds instead of leaving the job waiting indefinitely. If Discord rate-limits a request, the action waits for the requested delay, up to 30 seconds, and retries once. Transient network errors and Discord `5xx` responses retry once after one second. A second failure ends the workflow with the available error details.
 
 ### The accent color did not apply
 

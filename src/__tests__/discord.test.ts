@@ -52,6 +52,7 @@ describe('sendDiscordWebhook', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('succeeds on the first try', async () => {
@@ -66,6 +67,18 @@ describe('sendDiscordWebhook', () => {
     const [url] = fetchMock.mock.calls[0];
     expect(url.toString()).toContain('with_components=true');
     expect(url.toString()).toContain('wait=true');
+  });
+
+  it('applies a 15-second timeout to every request', async () => {
+    const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+    fetchMock.mockResolvedValueOnce(makeResponse(200));
+
+    await sendDiscordWebhook({
+      webhookUrl: WEBHOOK_URL,
+      message: makeMessage(),
+    });
+
+    expect(timeoutSpy).toHaveBeenCalledWith(15_000);
   });
 
   it('retries once after 429 and waits per body retry_after', async () => {
@@ -122,7 +135,7 @@ describe('sendDiscordWebhook', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it('throws immediately on non-429 errors without retrying', async () => {
+  it('throws immediately on non-transient client errors without retrying', async () => {
     fetchMock.mockResolvedValueOnce(
       makeResponse(400, {
         body: 'bad request',
@@ -138,6 +151,65 @@ describe('sendDiscordWebhook', () => {
     ).rejects.toThrow('Discord webhook request failed with 400 Bad Request: bad request');
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries once after a transient Discord server error', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        makeResponse(502, {
+          body: 'bad gateway',
+          statusText: 'Bad Gateway',
+        }),
+      )
+      .mockResolvedValueOnce(makeResponse(200));
+
+    const promise = sendDiscordWebhook({
+      webhookUrl: WEBHOOK_URL,
+      message: makeMessage(),
+    });
+
+    await vi.advanceTimersByTimeAsync(999);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1);
+    await promise;
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries once after a network error', async () => {
+    fetchMock
+      .mockRejectedValueOnce(new TypeError('socket closed'))
+      .mockResolvedValueOnce(makeResponse(200));
+
+    const promise = sendDiscordWebhook({
+      webhookUrl: WEBHOOK_URL,
+      message: makeMessage(),
+    });
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    await promise;
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('surfaces the network error after the retry also fails', async () => {
+    fetchMock
+      .mockRejectedValueOnce(new TypeError('first failure'))
+      .mockRejectedValueOnce(new TypeError('second failure'));
+
+    const promise = sendDiscordWebhook({
+      webhookUrl: WEBHOOK_URL,
+      message: makeMessage(),
+    });
+    const assertion = expect(promise).rejects.toThrow(
+      'Discord webhook request failed after 2 attempts: second failure',
+    );
+
+    await vi.runAllTimersAsync();
+    await assertion;
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('caps retry_after wait at 30 seconds', async () => {
