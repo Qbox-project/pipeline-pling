@@ -185,6 +185,7 @@ export interface BuildPullRequestMessageOptions {
   sizeThresholds?: [number, number, number];
   eventColors?: Record<string, number>;
   labelColorPriority?: string[];
+  redactLabels?: string[];
 }
 
 export interface BuildIssueMessageOptions {
@@ -201,6 +202,7 @@ export interface BuildIssueMessageOptions {
   highlightFirstTimeContributors?: boolean;
   eventColors?: Record<string, number>;
   labelColorPriority?: string[];
+  redactLabels?: string[];
 }
 
 export const IS_COMPONENTS_V2 = 1 << 15;

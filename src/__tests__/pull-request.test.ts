@@ -298,4 +298,19 @@ describe('buildPullRequestMessage', () => {
     expect(serialized).not.toContain('/pull/42');
     expect(buttons(message)).toHaveLength(0);
   });
+
+  it('fully redacts pull requests with configured privacy labels', () => {
+    const message = buildPullRequestMessage(makePayload(), {
+      redactLabels: ['DISCORD'],
+      labelColorPriority: ['discord'],
+    });
+    const serialized = JSON.stringify(message);
+
+    expect(serialized).toContain('redacted pull request');
+    expect(serialized).toContain('contributor');
+    expect(serialized).not.toContain('#42');
+    expect(serialized).not.toContain('enhancement');
+    expect(serialized).not.toContain('/pull/42');
+    expect(message.components[0].accent_color).toBe(0x2f81f7);
+  });
 });

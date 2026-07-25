@@ -5,6 +5,7 @@ import {
   formatAccountList,
   formatBody,
   getLabelFilterReason,
+  hasListedLabel,
   isFirstTimeContributor,
   normalizeUsernames,
   resolveActivityAvatar,
@@ -177,7 +178,9 @@ export function buildIssueMessage(
   const highlightFirstTimeContributors =
     options.highlightFirstTimeContributors ?? true;
   const issue = payload.issue;
-  const isRedacted = accountIsListed(issue.user, fullAnonUsers);
+  const isRedacted =
+    accountIsListed(issue.user, fullAnonUsers) ||
+    hasListedLabel(issue.labels, options.redactLabels ?? []);
   const actor = formatAccount(
     payload.sender,
     nameAnonUsers,
@@ -244,10 +247,12 @@ export function buildIssueMessage(
     }
   }
 
-  const labelColor = resolvePrioritizedLabelColor(
-    issue.labels,
-    options.labelColorPriority ?? [],
-  );
+  const labelColor = isRedacted
+    ? undefined
+    : resolvePrioritizedLabelColor(
+        issue.labels,
+        options.labelColorPriority ?? [],
+      );
   const eventColors = options.eventColors ?? {};
   const eventColor =
     eventColors[getIssueColorKey(payload)] ?? eventColors.issue;

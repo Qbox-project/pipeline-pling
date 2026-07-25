@@ -282,6 +282,7 @@ describe('run', () => {
         sizeThresholds: [100, 500, 1000],
         eventColors: {},
         labelColorPriority: [],
+        redactLabels: [],
       });
       expect(mocks.sendDiscordWebhook).toHaveBeenCalledWith({
         webhookUrl: WEBHOOK_URL,
@@ -397,6 +398,7 @@ describe('run', () => {
       highlightFirstTimeContributors: true,
       eventColors: {},
       labelColorPriority: [],
+      redactLabels: [],
     });
     expect(mocks.sendDiscordWebhook).toHaveBeenCalledWith({
       webhookUrl: WEBHOOK_URL,
@@ -523,6 +525,7 @@ describe('run', () => {
       expect.objectContaining({
         eventColors: { 'issue.opened': 0x123456 },
         labelColorPriority: ['security', 'bug'],
+        redactLabels: [],
       }),
     );
   });

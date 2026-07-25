@@ -233,4 +233,19 @@ describe('buildIssueMessage', () => {
     expect(serialized).not.toContain('/issues/51');
     expect(buttons(message)).toHaveLength(0);
   });
+
+  it('fully redacts issues with configured privacy labels', () => {
+    const message = buildIssueMessage(makePayload(), {
+      redactLabels: ['BUG'],
+      labelColorPriority: ['bug'],
+    });
+    const serialized = JSON.stringify(message);
+
+    expect(serialized).toContain('redacted issue');
+    expect(serialized).toContain('reporter');
+    expect(serialized).not.toContain('#51');
+    expect(serialized).not.toContain('discord');
+    expect(serialized).not.toContain('/issues/51');
+    expect(message.components[0].accent_color).toBe(0x1f883d);
+  });
 });

@@ -60,6 +60,14 @@ export function getLabelFilterReason(
   return undefined;
 }
 
+export function hasListedLabel(
+  labels: Array<{ name: string }>,
+  listedLabels: string[],
+): boolean {
+  const normalized = new Set(labels.map((label) => label.name.toLowerCase()));
+  return listedLabels.some((label) => normalized.has(label.toLowerCase()));
+}
+
 export function accountIsListed(
   account: GitHubAccount,
   users: string[],

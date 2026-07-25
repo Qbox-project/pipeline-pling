@@ -279,6 +279,7 @@ async function runPullRequest(
     labelColorPriority: parseActionList(
       core.getInput('label-color-priority'),
     ),
+    redactLabels: parseActionList(core.getInput('redact-labels')),
   });
 
   core.info(
@@ -335,6 +336,7 @@ async function runIssue(
     labelColorPriority: parseActionList(
       core.getInput('label-color-priority'),
     ),
+    redactLabels: parseActionList(core.getInput('redact-labels')),
   });
 
   core.info(

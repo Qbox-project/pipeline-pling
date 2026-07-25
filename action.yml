@@ -104,6 +104,9 @@ inputs:
   label-color-priority:
     description: Ordered labels whose GitHub color takes priority for pull request and issue cards.
     required: false
+  redact-labels:
+    description: Fully redact pull requests and issues carrying any of these labels.
+    required: false
   accent-color:
     description: Fallback Discord accent color as #RRGGBB or RRGGBB; branch-colors takes priority.
     required: false

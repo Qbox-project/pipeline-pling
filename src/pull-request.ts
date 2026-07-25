@@ -5,6 +5,7 @@ import {
   formatAccountList,
   formatBody,
   getLabelFilterReason,
+  hasListedLabel,
   isFirstTimeContributor,
   normalizeUsernames,
   resolveActivityAvatar,
@@ -309,7 +310,9 @@ export function buildPullRequestMessage(
   const sizeThresholds =
     options.sizeThresholds ?? DEFAULT_PULL_REQUEST_SIZE_THRESHOLDS;
   const pullRequest = payload.pull_request;
-  const isRedacted = accountIsListed(pullRequest.user, fullAnonUsers);
+  const isRedacted =
+    accountIsListed(pullRequest.user, fullAnonUsers) ||
+    hasListedLabel(pullRequest.labels, options.redactLabels ?? []);
   const actor = formatAccount(
     payload.sender,
     nameAnonUsers,
@@ -377,10 +380,12 @@ export function buildPullRequestMessage(
     }
   }
 
-  const labelColor = resolvePrioritizedLabelColor(
-    pullRequest.labels,
-    options.labelColorPriority ?? [],
-  );
+  const labelColor = isRedacted
+    ? undefined
+    : resolvePrioritizedLabelColor(
+        pullRequest.labels,
+        options.labelColorPriority ?? [],
+      );
   const eventColors = options.eventColors ?? {};
   const eventColor =
     eventColors[getPullRequestColorKey(payload)] ?? eventColors['pull-request'];
