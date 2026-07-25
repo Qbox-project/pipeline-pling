@@ -88,6 +88,33 @@ export interface PullRequestPayload {
   sender: GitHubAccount;
 }
 
+export interface IssuesPayload {
+  action: string;
+  issue: {
+    number: number;
+    html_url: string;
+    title: string;
+    body: string | null;
+    state: 'open' | 'closed';
+    state_reason?: string | null;
+    user: GitHubAccount;
+    author_association?: string;
+    labels: GitHubLabel[];
+    assignees: GitHubAccount[];
+    milestone?: {
+      title: string;
+      html_url?: string;
+    } | null;
+    type?: {
+      name: string;
+      color?: string;
+    } | null;
+    comments?: number;
+  };
+  repository: GitHubRepository;
+  sender: GitHubAccount;
+}
+
 export interface TextDisplayComponent {
   type: 10;
   content: string;
@@ -144,6 +171,20 @@ export interface BuildMessageOptions {
 }
 
 export interface BuildPullRequestMessageOptions {
+  accentColor?: number;
+  useSenderAvatar?: boolean;
+  useRepoUsername?: boolean;
+  repoName?: string;
+  hideLinks?: boolean;
+  compactMode?: boolean;
+  nameAnonUsers?: string[];
+  fullAnonUsers?: string[];
+  bodyMaxLength?: number;
+  details?: string[];
+  highlightFirstTimeContributors?: boolean;
+}
+
+export interface BuildIssueMessageOptions {
   accentColor?: number;
   useSenderAvatar?: boolean;
   useRepoUsername?: boolean;

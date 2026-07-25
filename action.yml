@@ -34,6 +34,10 @@ inputs:
     description: Comma-separated pull request lifecycle actions to notify for.
     required: false
     default: opened,reopened,converted_to_draft,ready_for_review,closed
+  issue-actions:
+    description: Comma-separated issue lifecycle actions to notify for.
+    required: false
+    default: opened,reopened,closed
   accent-color:
     description: Fallback Discord accent color as #RRGGBB or RRGGBB; branch-colors takes priority.
     required: false

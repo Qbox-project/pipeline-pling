@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   setFailed: vi.fn<(message: string) => void>(),
   buildDiscordMessage: vi.fn(),
   buildPullRequestMessage: vi.fn(),
+  buildIssueMessage: vi.fn(),
   sendDiscordWebhook: vi.fn(),
 }));
 
@@ -53,9 +54,21 @@ vi.mock('../pull-request.js', async () => {
   };
 });
 
+vi.mock('../issue.js', async () => {
+  const actual = await vi.importActual<typeof import('../issue.js')>(
+    '../issue.js',
+  );
+
+  return {
+    ...actual,
+    buildIssueMessage: mocks.buildIssueMessage,
+  };
+});
+
 import { run } from '../main.js';
 import type {
   DiscordComponentsMessage,
+  IssuesPayload,
   PullRequestPayload,
   PushCommit,
   PushPayload,
@@ -158,6 +171,41 @@ function makePullRequestPayload(
   };
 }
 
+function makeIssuePayload(
+  overrides: Partial<IssuesPayload> = {},
+): IssuesPayload {
+  return {
+    action: 'opened',
+    issue: {
+      number: 51,
+      html_url: 'https://github.com/Qbox-project/pipeline-pling/issues/51',
+      title: 'Support issue notifications',
+      body: 'A useful issue summary.',
+      state: 'open',
+      user: {
+        login: 'reporter',
+        type: 'User',
+        avatar_url: 'https://avatars.githubusercontent.com/u/54321?v=4',
+      },
+      author_association: 'NONE',
+      labels: [],
+      assignees: [],
+      comments: 0,
+    },
+    repository: {
+      name: 'pipeline-pling',
+      full_name: 'Qbox-project/pipeline-pling',
+      html_url: 'https://github.com/Qbox-project/pipeline-pling',
+    },
+    sender: {
+      login: 'reporter',
+      type: 'User',
+      avatar_url: 'https://avatars.githubusercontent.com/u/54321?v=4',
+    },
+    ...overrides,
+  };
+}
+
 function setInputs(
   stringInputs: Record<string, string> = {},
   booleanInputs: Record<string, boolean> = {},
@@ -186,6 +234,7 @@ describe('run', () => {
     mocks.context.payload = makePayload();
     mocks.buildDiscordMessage.mockReturnValue(discordMessage);
     mocks.buildPullRequestMessage.mockReturnValue(discordMessage);
+    mocks.buildIssueMessage.mockReturnValue(discordMessage);
     mocks.sendDiscordWebhook.mockResolvedValue(undefined);
     setInputs();
   });
@@ -258,6 +307,61 @@ describe('run', () => {
 
     expect(mocks.warning).toHaveBeenCalledWith(
       'Unknown pull-request-actions value "teleported"; ignoring.',
+    );
+    expect(mocks.sendDiscordWebhook).toHaveBeenCalledOnce();
+  });
+
+  it('renders and sends issue lifecycle events', async () => {
+    const payload = makeIssuePayload();
+    mocks.context.eventName = 'issues';
+    mocks.context.payload = payload;
+    setInputs({
+      'issue-actions': 'opened,closed',
+      'thread-id': 'issue-thread',
+    });
+
+    await run();
+
+    expect(mocks.buildIssueMessage).toHaveBeenCalledWith(payload, {
+      accentColor: undefined,
+      useSenderAvatar: true,
+      useRepoUsername: true,
+      repoName: undefined,
+      hideLinks: false,
+      compactMode: false,
+      nameAnonUsers: [],
+      fullAnonUsers: [],
+    });
+    expect(mocks.sendDiscordWebhook).toHaveBeenCalledWith({
+      webhookUrl: WEBHOOK_URL,
+      message: discordMessage,
+      threadId: 'issue-thread',
+    });
+  });
+
+  it('skips issue activities outside the configured lifecycle actions', async () => {
+    mocks.context.eventName = 'issues';
+    mocks.context.payload = makeIssuePayload({ action: 'labeled' });
+    setInputs({ 'issue-actions': 'opened,closed' });
+
+    await run();
+
+    expect(mocks.info).toHaveBeenCalledWith(
+      'Issue action "labeled" is not enabled; skipping.',
+    );
+    expect(mocks.buildIssueMessage).not.toHaveBeenCalled();
+    expect(mocks.sendDiscordWebhook).not.toHaveBeenCalled();
+  });
+
+  it('warns about unknown issue action settings', async () => {
+    mocks.context.eventName = 'issues';
+    mocks.context.payload = makeIssuePayload();
+    setInputs({ 'issue-actions': 'opened,teleported' });
+
+    await run();
+
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'Unknown issue-actions value "teleported"; ignoring.',
     );
     expect(mocks.sendDiscordWebhook).toHaveBeenCalledOnce();
   });

@@ -3,6 +3,7 @@ import {
   formatAccount,
   formatAccountList,
   formatBody,
+  isFirstTimeContributor,
   normalizeUsernames,
   resolveActivityAvatar,
   resolveRepositoryName,
@@ -37,10 +38,6 @@ export const SUPPORTED_PULL_REQUEST_ACTIONS = [
 ] as const;
 
 const DEFAULT_BODY_MAX_LENGTH = 320;
-const FIRST_TIME_ASSOCIATIONS = new Set([
-  'FIRST_TIMER',
-  'FIRST_TIME_CONTRIBUTOR',
-]);
 
 const PR_COLORS = {
   active: 0x2f81f7,
@@ -126,8 +123,7 @@ function buildMetadata(
   );
   const firstTime =
     highlightFirstTimeContributors &&
-    pullRequest.author_association &&
-    FIRST_TIME_ASSOCIATIONS.has(pullRequest.author_association)
+    isFirstTimeContributor(pullRequest.author_association)
       ? ' · **First-time contributor**'
       : '';
   rows.push(`**Author:** ${author}${firstTime}`);

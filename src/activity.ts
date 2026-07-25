@@ -11,6 +11,10 @@ import type {
 
 const REPOSITORY_NAME_MAX_LENGTH = 80;
 const GITHUB_AVATAR_SIZE = 256;
+const FIRST_TIME_ASSOCIATIONS = new Set([
+  'FIRST_TIMER',
+  'FIRST_TIME_CONTRIBUTOR',
+]);
 
 export interface ActivityPayloadBase {
   repository: GitHubRepository;
@@ -19,6 +23,15 @@ export interface ActivityPayloadBase {
 
 export function normalizeUsernames(users: string[]): string[] {
   return users.map((user) => user.toLowerCase());
+}
+
+export function isFirstTimeContributor(
+  authorAssociation?: string,
+): boolean {
+  return (
+    authorAssociation !== undefined &&
+    FIRST_TIME_ASSOCIATIONS.has(authorAssociation)
+  );
 }
 
 export function accountIsListed(

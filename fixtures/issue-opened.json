@@ -1,0 +1,42 @@
+{
+  "action": "opened",
+  "issue": {
+    "number": 51,
+    "html_url": "https://github.com/Qbox-project/pipeline-pling/issues/51",
+    "title": "Support issue notifications",
+    "body": "Show issue lifecycle updates in Discord.",
+    "state": "open",
+    "state_reason": null,
+    "user": {
+      "login": "reporter",
+      "type": "User",
+      "avatar_url": "https://avatars.githubusercontent.com/u/54321?v=4",
+      "html_url": "https://github.com/reporter"
+    },
+    "author_association": "FIRST_TIMER",
+    "labels": [
+      { "name": "enhancement", "color": "a2eeef" }
+    ],
+    "assignees": [],
+    "milestone": {
+      "title": "v1.5.0",
+      "html_url": "https://github.com/Qbox-project/pipeline-pling/milestone/2"
+    },
+    "type": {
+      "name": "Feature",
+      "color": "blue"
+    },
+    "comments": 0
+  },
+  "repository": {
+    "name": "pipeline-pling",
+    "full_name": "Qbox-project/pipeline-pling",
+    "html_url": "https://github.com/Qbox-project/pipeline-pling"
+  },
+  "sender": {
+    "login": "reporter",
+    "type": "User",
+    "avatar_url": "https://avatars.githubusercontent.com/u/54321?v=4",
+    "html_url": "https://github.com/reporter"
+  }
+}

@@ -4,6 +4,12 @@ import * as github from '@actions/github';
 import { parseBranchColors, parseHexColor, resolveAccentColor } from './color.js';
 import { sendDiscordWebhook } from './discord.js';
 import {
+  buildIssueMessage,
+  DEFAULT_ISSUE_ACTIONS,
+  shouldSkipIssue,
+  SUPPORTED_ISSUE_ACTIONS,
+} from './issue.js';
+import {
   buildDiscordMessage,
   filterSilentCommits,
   parseBranch,
@@ -18,12 +24,17 @@ import {
   shouldSkipPullRequest,
   SUPPORTED_PULL_REQUEST_ACTIONS,
 } from './pull-request.js';
-import type { PullRequestPayload, PushPayload } from './types.js';
+import type {
+  IssuesPayload,
+  PullRequestPayload,
+  PushPayload,
+} from './types.js';
 
 const SUPPORTED_EVENTS = new Set([
   'push',
   'pull_request',
   'pull_request_target',
+  'issues',
 ]);
 
 function parseAccentColor(eventName: string): number | undefined {
@@ -57,6 +68,24 @@ function parsePullRequestActions(input: string): string[] {
   for (const action of configured) {
     if (!supported.has(action)) {
       core.warning(`Unknown pull-request-actions value "${action}"; ignoring.`);
+    }
+  }
+
+  return valid;
+}
+
+function parseIssueActions(input: string): string[] {
+  if (!input.trim()) {
+    return [...DEFAULT_ISSUE_ACTIONS];
+  }
+
+  const configured = parseActionList(input);
+  const supported = new Set<string>(SUPPORTED_ISSUE_ACTIONS);
+  const valid = configured.filter((action) => supported.has(action));
+
+  for (const action of configured) {
+    if (!supported.has(action)) {
+      core.warning(`Unknown issue-actions value "${action}"; ignoring.`);
     }
   }
 
@@ -117,6 +146,41 @@ async function runPullRequest(
 
   core.info(
     `Sending Discord notification for pull request #${payload.pull_request.number} (${payload.action}) to ${payload.repository.full_name}.`,
+  );
+
+  await sendDiscordWebhook({
+    webhookUrl: inputs.webhookUrl,
+    message,
+    threadId: inputs.threadId,
+  });
+
+  core.info('Discord notification sent successfully.');
+}
+
+async function runIssue(
+  payload: IssuesPayload,
+  inputs: SharedInputs,
+): Promise<void> {
+  const actions = parseIssueActions(core.getInput('issue-actions'));
+  const skipReason = shouldSkipIssue(payload, inputs.skipBots, actions);
+  if (skipReason) {
+    core.info(skipReason);
+    return;
+  }
+
+  const message = buildIssueMessage(payload, {
+    accentColor: inputs.accentColor,
+    useSenderAvatar: inputs.useSenderAvatar,
+    useRepoUsername: inputs.useRepoUsername,
+    repoName: inputs.repoName,
+    hideLinks: inputs.hideLinks,
+    compactMode: inputs.compactMode,
+    nameAnonUsers: inputs.nameAnonUsers,
+    fullAnonUsers: inputs.fullAnonUsers,
+  });
+
+  core.info(
+    `Sending Discord notification for issue #${payload.issue.number} (${payload.action}) to ${payload.repository.full_name}.`,
   );
 
   await sendDiscordWebhook({
@@ -207,6 +271,11 @@ export async function run(): Promise<void> {
       github.context.payload as unknown as PullRequestPayload,
       inputs,
     );
+    return;
+  }
+
+  if (eventName === 'issues') {
+    await runIssue(github.context.payload as unknown as IssuesPayload, inputs);
     return;
   }
 
