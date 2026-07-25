@@ -1,0 +1,49 @@
+{
+  "action": "opened",
+  "number": 42,
+  "pull_request": {
+    "number": 42,
+    "html_url": "https://github.com/Qbox-project/pipeline-pling/pull/42",
+    "title": "feat: add pull request notifications",
+    "body": "Show useful lifecycle updates in Discord.",
+    "draft": false,
+    "merged": false,
+    "user": {
+      "login": "contributor",
+      "type": "User",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12345?v=4",
+      "html_url": "https://github.com/contributor"
+    },
+    "author_association": "FIRST_TIME_CONTRIBUTOR",
+    "head": {
+      "ref": "feature/notifications",
+      "label": "contributor:feature/notifications"
+    },
+    "base": {
+      "ref": "main",
+      "label": "Qbox-project:main"
+    },
+    "labels": [
+      { "name": "enhancement", "color": "a2eeef" }
+    ],
+    "assignees": [],
+    "requested_reviewers": [],
+    "requested_teams": [],
+    "additions": 120,
+    "deletions": 10,
+    "changed_files": 4,
+    "comments": 0,
+    "commits": 3
+  },
+  "repository": {
+    "name": "pipeline-pling",
+    "full_name": "Qbox-project/pipeline-pling",
+    "html_url": "https://github.com/Qbox-project/pipeline-pling"
+  },
+  "sender": {
+    "login": "contributor",
+    "type": "User",
+    "avatar_url": "https://avatars.githubusercontent.com/u/12345?v=4",
+    "html_url": "https://github.com/contributor"
+  }
+}

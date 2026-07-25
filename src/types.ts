@@ -4,6 +4,28 @@ export interface GitHubUser {
   username?: string;
 }
 
+export interface GitHubAccount {
+  login: string;
+  type: string;
+  avatar_url?: string;
+  html_url?: string;
+}
+
+export interface GitHubLabel {
+  name: string;
+  color?: string;
+}
+
+export interface GitHubRepository {
+  name?: string;
+  full_name: string;
+  html_url: string;
+  owner?: {
+    login?: string;
+    avatar_url?: string;
+  };
+}
+
 export interface PushCommit {
   id: string;
   message: string;
@@ -17,24 +39,53 @@ export interface PushPayload {
   ref: string;
   compare: string;
   commits: PushCommit[];
-  repository: {
-    name?: string;
-    full_name: string;
-    html_url: string;
-    owner?: {
-      login?: string;
-      avatar_url?: string;
-    };
-  };
-  sender: {
-    login: string;
-    type: string;
-    avatar_url?: string;
-  };
+  repository: GitHubRepository;
+  sender: GitHubAccount;
   pusher: {
     name: string;
     email?: string;
   };
+}
+
+export interface PullRequestRef {
+  ref: string;
+  label?: string;
+  sha?: string;
+  repo?: {
+    full_name?: string;
+  } | null;
+}
+
+export interface PullRequestPayload {
+  action: string;
+  number: number;
+  pull_request: {
+    number: number;
+    html_url: string;
+    title: string;
+    body: string | null;
+    draft: boolean;
+    merged: boolean;
+    user: GitHubAccount;
+    author_association?: string;
+    head: PullRequestRef;
+    base: PullRequestRef;
+    labels: GitHubLabel[];
+    assignees: GitHubAccount[];
+    requested_reviewers: GitHubAccount[];
+    requested_teams?: Array<{
+      name: string;
+      slug?: string;
+      html_url?: string;
+    }>;
+    additions?: number;
+    deletions?: number;
+    changed_files?: number;
+    comments?: number;
+    commits?: number;
+  };
+  repository: GitHubRepository;
+  sender: GitHubAccount;
 }
 
 export interface TextDisplayComponent {
@@ -90,6 +141,20 @@ export interface BuildMessageOptions {
   maxTextLength?: number;
   maxTitleLength?: number;
   maxDescriptionLength?: number;
+}
+
+export interface BuildPullRequestMessageOptions {
+  accentColor?: number;
+  useSenderAvatar?: boolean;
+  useRepoUsername?: boolean;
+  repoName?: string;
+  hideLinks?: boolean;
+  compactMode?: boolean;
+  nameAnonUsers?: string[];
+  fullAnonUsers?: string[];
+  bodyMaxLength?: number;
+  details?: string[];
+  highlightFirstTimeContributors?: boolean;
 }
 
 export const IS_COMPONENTS_V2 = 1 << 15;

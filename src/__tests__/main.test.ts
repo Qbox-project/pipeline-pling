@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   warning: vi.fn<(message: string) => void>(),
   setFailed: vi.fn<(message: string) => void>(),
   buildDiscordMessage: vi.fn(),
+  buildPullRequestMessage: vi.fn(),
   sendDiscordWebhook: vi.fn(),
 }));
 
@@ -41,9 +42,21 @@ vi.mock('../discord.js', () => ({
   sendDiscordWebhook: mocks.sendDiscordWebhook,
 }));
 
+vi.mock('../pull-request.js', async () => {
+  const actual = await vi.importActual<typeof import('../pull-request.js')>(
+    '../pull-request.js',
+  );
+
+  return {
+    ...actual,
+    buildPullRequestMessage: mocks.buildPullRequestMessage,
+  };
+});
+
 import { run } from '../main.js';
 import type {
   DiscordComponentsMessage,
+  PullRequestPayload,
   PushCommit,
   PushPayload,
 } from '../types.js';
@@ -103,6 +116,48 @@ function makePayload(overrides: Partial<PushPayload> = {}): PushPayload {
   };
 }
 
+function makePullRequestPayload(
+  overrides: Partial<PullRequestPayload> = {},
+): PullRequestPayload {
+  return {
+    action: 'opened',
+    number: 42,
+    pull_request: {
+      number: 42,
+      html_url: 'https://github.com/Qbox-project/pipeline-pling/pull/42',
+      title: 'feat: add pull request notifications',
+      body: 'A useful summary.',
+      draft: false,
+      merged: false,
+      user: {
+        login: 'contributor',
+        type: 'User',
+        avatar_url: 'https://avatars.githubusercontent.com/u/12345?v=4',
+      },
+      author_association: 'CONTRIBUTOR',
+      head: { ref: 'feature/notifications', label: 'contributor:feature/notifications' },
+      base: { ref: 'main', label: 'Qbox-project:main' },
+      labels: [],
+      assignees: [],
+      requested_reviewers: [],
+      additions: 120,
+      deletions: 10,
+      changed_files: 4,
+    },
+    repository: {
+      name: 'pipeline-pling',
+      full_name: 'Qbox-project/pipeline-pling',
+      html_url: 'https://github.com/Qbox-project/pipeline-pling',
+    },
+    sender: {
+      login: 'contributor',
+      type: 'User',
+      avatar_url: 'https://avatars.githubusercontent.com/u/12345?v=4',
+    },
+    ...overrides,
+  };
+}
+
 function setInputs(
   stringInputs: Record<string, string> = {},
   booleanInputs: Record<string, boolean> = {},
@@ -130,21 +185,81 @@ describe('run', () => {
     mocks.context.eventName = 'push';
     mocks.context.payload = makePayload();
     mocks.buildDiscordMessage.mockReturnValue(discordMessage);
+    mocks.buildPullRequestMessage.mockReturnValue(discordMessage);
     mocks.sendDiscordWebhook.mockResolvedValue(undefined);
     setInputs();
   });
 
   it('skips unsupported GitHub events before reading inputs', async () => {
-    mocks.context.eventName = 'pull_request';
+    mocks.context.eventName = 'workflow_dispatch';
 
     await run();
 
     expect(mocks.info).toHaveBeenCalledWith(
-      'Event pull_request is not supported; skipping.',
+      'Event workflow_dispatch is not supported; skipping.',
     );
     expect(mocks.getInput).not.toHaveBeenCalled();
     expect(mocks.buildDiscordMessage).not.toHaveBeenCalled();
     expect(mocks.sendDiscordWebhook).not.toHaveBeenCalled();
+  });
+
+  it.each(['pull_request', 'pull_request_target'])(
+    'renders and sends supported %s lifecycle events',
+    async (eventName) => {
+      const payload = makePullRequestPayload();
+      mocks.context.eventName = eventName;
+      mocks.context.payload = payload;
+      setInputs({
+        'pull-request-actions': 'opened,closed',
+        'thread-id': 'pr-thread',
+        'accent-color': '#123456',
+      });
+
+      await run();
+
+      expect(mocks.buildPullRequestMessage).toHaveBeenCalledWith(payload, {
+        accentColor: 0x123456,
+        useSenderAvatar: true,
+        useRepoUsername: true,
+        repoName: undefined,
+        hideLinks: false,
+        compactMode: false,
+        nameAnonUsers: [],
+        fullAnonUsers: [],
+      });
+      expect(mocks.sendDiscordWebhook).toHaveBeenCalledWith({
+        webhookUrl: WEBHOOK_URL,
+        message: discordMessage,
+        threadId: 'pr-thread',
+      });
+    },
+  );
+
+  it('skips pull request activities outside the configured lifecycle actions', async () => {
+    mocks.context.eventName = 'pull_request_target';
+    mocks.context.payload = makePullRequestPayload({ action: 'synchronize' });
+    setInputs({ 'pull-request-actions': 'opened,closed' });
+
+    await run();
+
+    expect(mocks.info).toHaveBeenCalledWith(
+      'Pull request action "synchronize" is not enabled; skipping.',
+    );
+    expect(mocks.buildPullRequestMessage).not.toHaveBeenCalled();
+    expect(mocks.sendDiscordWebhook).not.toHaveBeenCalled();
+  });
+
+  it('warns about unknown pull request action settings', async () => {
+    mocks.context.eventName = 'pull_request';
+    mocks.context.payload = makePullRequestPayload();
+    setInputs({ 'pull-request-actions': 'opened,teleported' });
+
+    await run();
+
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'Unknown pull-request-actions value "teleported"; ignoring.',
+    );
+    expect(mocks.sendDiscordWebhook).toHaveBeenCalledOnce();
   });
 
   it('parses action inputs and passes them through to rendering and delivery', async () => {

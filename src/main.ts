@@ -11,48 +11,136 @@ import {
   parseUsernameList,
   shouldSkipPush,
 } from './message.js';
-import type { PushPayload } from './types.js';
+import {
+  buildPullRequestMessage,
+  DEFAULT_PULL_REQUEST_ACTIONS,
+  parseActionList,
+  shouldSkipPullRequest,
+  SUPPORTED_PULL_REQUEST_ACTIONS,
+} from './pull-request.js';
+import type { PullRequestPayload, PushPayload } from './types.js';
 
-export async function run(): Promise<void> {
-  if (github.context.eventName !== 'push') {
-    core.info(`Event ${github.context.eventName} is not supported; skipping.`);
+const SUPPORTED_EVENTS = new Set([
+  'push',
+  'pull_request',
+  'pull_request_target',
+]);
+
+function parseAccentColor(eventName: string): number | undefined {
+  const accentColorInput = core.getInput('accent-color');
+  if (!accentColorInput) {
+    return undefined;
+  }
+
+  const parsed = parseHexColor(accentColorInput);
+  if (parsed !== undefined) {
+    return parsed;
+  }
+
+  core.warning(
+    eventName === 'push'
+      ? `Invalid accent-color "${accentColorInput}"; falling back to repository hash color.`
+      : `Invalid accent-color "${accentColorInput}"; falling back to the event default color.`,
+  );
+  return undefined;
+}
+
+function parsePullRequestActions(input: string): string[] {
+  if (!input.trim()) {
+    return [...DEFAULT_PULL_REQUEST_ACTIONS];
+  }
+
+  const configured = parseActionList(input);
+  const supported = new Set<string>(SUPPORTED_PULL_REQUEST_ACTIONS);
+  const valid = configured.filter((action) => supported.has(action));
+
+  for (const action of configured) {
+    if (!supported.has(action)) {
+      core.warning(`Unknown pull-request-actions value "${action}"; ignoring.`);
+    }
+  }
+
+  return valid;
+}
+
+interface SharedInputs {
+  skipBots: boolean;
+  webhookUrl: string;
+  threadId?: string;
+  useSenderAvatar: boolean;
+  useRepoUsername: boolean;
+  repoName?: string;
+  hideLinks: boolean;
+  compactMode: boolean;
+  nameAnonUsers: string[];
+  fullAnonUsers: string[];
+  accentColor?: number;
+}
+
+function readSharedInputs(eventName: string): SharedInputs {
+  return {
+    skipBots: core.getBooleanInput('skip-bots'),
+    webhookUrl: core.getInput('webhook-url', { required: true }),
+    threadId: core.getInput('thread-id') || undefined,
+    useSenderAvatar: core.getBooleanInput('use-sender-avatar'),
+    useRepoUsername: core.getBooleanInput('use-repo-username'),
+    repoName: core.getInput('repo-name') || undefined,
+    hideLinks: core.getBooleanInput('hide-links'),
+    compactMode: core.getBooleanInput('compact-mode'),
+    nameAnonUsers: parseUsernameList(core.getInput('name-anon-users')),
+    fullAnonUsers: parseUsernameList(core.getInput('full-anon-users')),
+    accentColor: parseAccentColor(eventName),
+  };
+}
+
+async function runPullRequest(
+  payload: PullRequestPayload,
+  inputs: SharedInputs,
+): Promise<void> {
+  const actions = parsePullRequestActions(core.getInput('pull-request-actions'));
+  const skipReason = shouldSkipPullRequest(payload, inputs.skipBots, actions);
+  if (skipReason) {
+    core.info(skipReason);
     return;
   }
 
-  const payload = github.context.payload as unknown as PushPayload;
-  const skipBots = core.getBooleanInput('skip-bots');
+  const message = buildPullRequestMessage(payload, {
+    accentColor: inputs.accentColor,
+    useSenderAvatar: inputs.useSenderAvatar,
+    useRepoUsername: inputs.useRepoUsername,
+    repoName: inputs.repoName,
+    hideLinks: inputs.hideLinks,
+    compactMode: inputs.compactMode,
+    nameAnonUsers: inputs.nameAnonUsers,
+    fullAnonUsers: inputs.fullAnonUsers,
+  });
+
+  core.info(
+    `Sending Discord notification for pull request #${payload.pull_request.number} (${payload.action}) to ${payload.repository.full_name}.`,
+  );
+
+  await sendDiscordWebhook({
+    webhookUrl: inputs.webhookUrl,
+    message,
+    threadId: inputs.threadId,
+  });
+
+  core.info('Discord notification sent successfully.');
+}
+
+async function runPush(
+  payload: PushPayload,
+  inputs: SharedInputs,
+): Promise<void> {
   const anonKeyword = core.getInput('anon-keyword') || '!anon';
   const silentKeyword = core.getInput('silent-keyword') || '!silent';
   const branchAllowlist = parseBranchList(core.getInput('branch-allowlist'));
   const branchDenylist = parseBranchList(core.getInput('branch-denylist'));
-  const webhookUrl = core.getInput('webhook-url', { required: true });
-  const threadId = core.getInput('thread-id');
-  const useSenderAvatar = core.getBooleanInput('use-sender-avatar');
-  const useRepoUsername = core.getBooleanInput('use-repo-username');
-  const repoName = core.getInput('repo-name');
-  const hideLinks = core.getBooleanInput('hide-links');
-  const compactMode = core.getBooleanInput('compact-mode');
-  const nameAnonUsers = parseUsernameList(core.getInput('name-anon-users'));
-  const fullAnonUsers = parseUsernameList(core.getInput('full-anon-users'));
-
-  const accentColorInput = core.getInput('accent-color');
-  let accentColor: number | undefined;
-  if (accentColorInput) {
-    const parsed = parseHexColor(accentColorInput);
-    if (parsed !== undefined) {
-      accentColor = parsed;
-    } else {
-      core.warning(
-        `Invalid accent-color "${accentColorInput}"; falling back to repository hash color.`,
-      );
-    }
-  }
-
   const branchColors = parseBranchColors(core.getInput('branch-colors'), (message) =>
     core.warning(message),
   );
 
-  const skipReason = shouldSkipPush(payload, skipBots, {
+  const skipReason = shouldSkipPush(payload, inputs.skipBots, {
     branchAllowlist,
     branchDenylist,
   });
@@ -76,20 +164,20 @@ export async function run(): Promise<void> {
   const resolvedAccentColor = resolveAccentColor(
     branch,
     branchColors,
-    accentColor,
+    inputs.accentColor,
     payload.repository.full_name,
   );
 
   const message = buildDiscordMessage(notificationPayload, {
     anonKeyword,
     accentColor: resolvedAccentColor,
-    useSenderAvatar,
-    useRepoUsername,
-    repoName: repoName || undefined,
-    hideLinks,
-    compactMode,
-    nameAnonUsers,
-    fullAnonUsers,
+    useSenderAvatar: inputs.useSenderAvatar,
+    useRepoUsername: inputs.useRepoUsername,
+    repoName: inputs.repoName,
+    hideLinks: inputs.hideLinks,
+    compactMode: inputs.compactMode,
+    nameAnonUsers: inputs.nameAnonUsers,
+    fullAnonUsers: inputs.fullAnonUsers,
   });
 
   core.info(
@@ -97,12 +185,32 @@ export async function run(): Promise<void> {
   );
 
   await sendDiscordWebhook({
-    webhookUrl,
+    webhookUrl: inputs.webhookUrl,
     message,
-    threadId: threadId || undefined,
+    threadId: inputs.threadId,
   });
 
   core.info('Discord notification sent successfully.');
+}
+
+export async function run(): Promise<void> {
+  const eventName = github.context.eventName;
+  if (!SUPPORTED_EVENTS.has(eventName)) {
+    core.info(`Event ${eventName} is not supported; skipping.`);
+    return;
+  }
+
+  const inputs = readSharedInputs(eventName);
+
+  if (eventName === 'pull_request' || eventName === 'pull_request_target') {
+    await runPullRequest(
+      github.context.payload as unknown as PullRequestPayload,
+      inputs,
+    );
+    return;
+  }
+
+  await runPush(github.context.payload as unknown as PushPayload, inputs);
 }
 
 if (require.main === module) {
