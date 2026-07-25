@@ -1,8 +1,8 @@
 {
   "name": "pipeline-pling",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
-  "description": "Post GitHub push commit notifications to Discord using Components V2",
+  "description": "Post GitHub push, pull request, and issue notifications to Discord using Components V2",
   "license": "MIT",
   "scripts": {
     "build": "esbuild src/main.ts --bundle --platform=node --target=node24 --outfile=dist/index.js --format=cjs --minify",
