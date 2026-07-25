@@ -311,6 +311,41 @@ describe('run', () => {
     expect(mocks.sendDiscordWebhook).toHaveBeenCalledOnce();
   });
 
+  it('applies pull request draft and smart branch filters', async () => {
+    mocks.context.eventName = 'pull_request_target';
+    mocks.context.payload = makePullRequestPayload({
+      pull_request: {
+        ...makePullRequestPayload().pull_request,
+        draft: true,
+      },
+    });
+    setInputs({
+      'pull-request-drafts': 'exclude',
+      'pull-request-base-allowlist': 'main',
+      'pull-request-head-allowlist': 'contributor:feature/**',
+    });
+
+    await run();
+
+    expect(mocks.info).toHaveBeenCalledWith(
+      'Draft pull request notifications are disabled; skipping.',
+    );
+    expect(mocks.sendDiscordWebhook).not.toHaveBeenCalled();
+  });
+
+  it('warns and includes drafts for invalid draft settings', async () => {
+    mocks.context.eventName = 'pull_request';
+    mocks.context.payload = makePullRequestPayload();
+    setInputs({ 'pull-request-drafts': 'sometimes' });
+
+    await run();
+
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'Invalid pull-request-drafts value "sometimes"; expected include or exclude. Defaulting to include.',
+    );
+    expect(mocks.sendDiscordWebhook).toHaveBeenCalledOnce();
+  });
+
   it('renders and sends issue lifecycle events', async () => {
     const payload = makeIssuePayload();
     mocks.context.eventName = 'issues';
@@ -364,6 +399,24 @@ describe('run', () => {
       'Unknown issue-actions value "teleported"; ignoring.',
     );
     expect(mocks.sendDiscordWebhook).toHaveBeenCalledOnce();
+  });
+
+  it('applies issue label filtering', async () => {
+    mocks.context.eventName = 'issues';
+    mocks.context.payload = makeIssuePayload({
+      issue: {
+        ...makeIssuePayload().issue,
+        labels: [{ name: 'internal', color: 'cccccc' }],
+      },
+    });
+    setInputs({ 'issue-label-denylist': 'Internal' });
+
+    await run();
+
+    expect(mocks.info).toHaveBeenCalledWith(
+      'Issue has denylisted label "internal"; skipping.',
+    );
+    expect(mocks.sendDiscordWebhook).not.toHaveBeenCalled();
   });
 
   it('parses action inputs and passes them through to rendering and delivery', async () => {

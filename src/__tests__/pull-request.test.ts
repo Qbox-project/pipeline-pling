@@ -112,6 +112,61 @@ describe('pull request filtering', () => {
       ),
     ).toContain('bot');
   });
+
+  it('filters drafts while allowing the ready-for-review transition', () => {
+    const draft = makePayload({
+      pull_request: { ...makePayload().pull_request, draft: true },
+    });
+    expect(
+      shouldSkipPullRequest(draft, true, undefined, { includeDrafts: false }),
+    ).toContain('Draft');
+
+    const ready = makePayload({ action: 'ready_for_review' });
+    expect(
+      shouldSkipPullRequest(ready, true, undefined, { includeDrafts: false }),
+    ).toBeUndefined();
+  });
+
+  it('filters base and fork-qualified head branches with glob patterns', () => {
+    const payload = makePayload();
+
+    expect(
+      shouldSkipPullRequest(payload, true, undefined, {
+        baseAllowlist: ['release/**'],
+      }),
+    ).toContain('base branch');
+    expect(
+      shouldSkipPullRequest(payload, true, undefined, {
+        baseAllowlist: ['ma*'],
+        headAllowlist: ['contributor:feature/**'],
+      }),
+    ).toBeUndefined();
+    expect(
+      shouldSkipPullRequest(payload, true, undefined, {
+        headDenylist: ['feature/**'],
+      }),
+    ).toContain('head branch');
+  });
+
+  it('applies case-insensitive label allowlists and denylists', () => {
+    const payload = makePayload();
+
+    expect(
+      shouldSkipPullRequest(payload, true, undefined, {
+        labelAllowlist: ['ENHANCEMENT'],
+      }),
+    ).toBeUndefined();
+    expect(
+      shouldSkipPullRequest(payload, true, undefined, {
+        labelAllowlist: ['security'],
+      }),
+    ).toContain('allowlisted label');
+    expect(
+      shouldSkipPullRequest(payload, true, undefined, {
+        labelDenylist: ['Discord'],
+      }),
+    ).toContain('denylisted label');
+  });
 });
 
 describe('buildPullRequestMessage', () => {

@@ -88,6 +88,26 @@ describe('issue filtering', () => {
       ),
     ).toContain('bot');
   });
+
+  it('applies case-insensitive label allowlists and denylists', () => {
+    const payload = makePayload();
+
+    expect(
+      shouldSkipIssue(payload, true, undefined, {
+        labelAllowlist: ['BUG'],
+      }),
+    ).toBeUndefined();
+    expect(
+      shouldSkipIssue(payload, true, undefined, {
+        labelAllowlist: ['security'],
+      }),
+    ).toContain('allowlisted label');
+    expect(
+      shouldSkipIssue(payload, true, undefined, {
+        labelDenylist: ['Discord'],
+      }),
+    ).toContain('denylisted label');
+  });
 });
 
 describe('buildIssueMessage', () => {

@@ -3,12 +3,14 @@ import {
   formatAccount,
   formatAccountList,
   formatBody,
+  getLabelFilterReason,
   isFirstTimeContributor,
   normalizeUsernames,
   resolveActivityAvatar,
   resolveRepositoryName,
   sanitizeBody,
 } from './activity.js';
+import { matchBranchPattern } from './color.js';
 import {
   escapeDiscordMarkdown,
   formatInlineCode,
@@ -65,6 +67,7 @@ export function shouldSkipPullRequest(
   payload: PullRequestPayload,
   skipBots: boolean,
   actions: readonly string[] = DEFAULT_PULL_REQUEST_ACTIONS,
+  options: PullRequestFilterOptions = {},
 ): string | undefined {
   if (skipBots && payload.sender.type === 'Bot') {
     return 'Pull request sender is a bot; skipping.';
@@ -74,7 +77,68 @@ export function shouldSkipPullRequest(
     return `Pull request action "${payload.action}" is not enabled; skipping.`;
   }
 
+  if (options.includeDrafts === false && payload.pull_request.draft) {
+    return 'Draft pull request notifications are disabled; skipping.';
+  }
+
+  const baseBranch = payload.pull_request.base.ref;
+  const baseAllowlist = options.baseAllowlist ?? [];
+  const baseDenylist = options.baseDenylist ?? [];
+  if (
+    baseAllowlist.length > 0 &&
+    !baseAllowlist.some((pattern) => matchBranchPattern(baseBranch, pattern))
+  ) {
+    return `Pull request base branch "${baseBranch}" is not in the allowlist; skipping.`;
+  }
+
+  if (baseDenylist.some((pattern) => matchBranchPattern(baseBranch, pattern))) {
+    return `Pull request base branch "${baseBranch}" is in the denylist; skipping.`;
+  }
+
+  const headBranches = [
+    payload.pull_request.head.ref,
+    payload.pull_request.head.label,
+  ].filter((branch): branch is string => Boolean(branch));
+  const headAllowlist = options.headAllowlist ?? [];
+  const headDenylist = options.headDenylist ?? [];
+  if (
+    headAllowlist.length > 0 &&
+    !headAllowlist.some((pattern) =>
+      headBranches.some((branch) => matchBranchPattern(branch, pattern)),
+    )
+  ) {
+    return `Pull request head branch "${payload.pull_request.head.ref}" is not in the allowlist; skipping.`;
+  }
+
+  if (
+    headDenylist.some((pattern) =>
+      headBranches.some((branch) => matchBranchPattern(branch, pattern)),
+    )
+  ) {
+    return `Pull request head branch "${payload.pull_request.head.ref}" is in the denylist; skipping.`;
+  }
+
+  const labelReason = getLabelFilterReason(
+    payload.pull_request.labels.map((label) => label.name),
+    options.labelAllowlist ?? [],
+    options.labelDenylist ?? [],
+    'Pull request',
+  );
+  if (labelReason) {
+    return labelReason;
+  }
+
   return undefined;
+}
+
+export interface PullRequestFilterOptions {
+  includeDrafts?: boolean;
+  baseAllowlist?: string[];
+  baseDenylist?: string[];
+  headAllowlist?: string[];
+  headDenylist?: string[];
+  labelAllowlist?: string[];
+  labelDenylist?: string[];
 }
 
 function getActionLabel(payload: PullRequestPayload): string {

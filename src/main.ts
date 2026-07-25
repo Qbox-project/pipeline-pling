@@ -92,6 +92,22 @@ function parseIssueActions(input: string): string[] {
   return valid;
 }
 
+function includeDraftPullRequests(input: string): boolean {
+  const value = input.trim().toLowerCase();
+  if (!value || value === 'include') {
+    return true;
+  }
+
+  if (value === 'exclude') {
+    return false;
+  }
+
+  core.warning(
+    `Invalid pull-request-drafts value "${input}"; expected include or exclude. Defaulting to include.`,
+  );
+  return true;
+}
+
 interface SharedInputs {
   skipBots: boolean;
   webhookUrl: string;
@@ -127,7 +143,27 @@ async function runPullRequest(
   inputs: SharedInputs,
 ): Promise<void> {
   const actions = parsePullRequestActions(core.getInput('pull-request-actions'));
-  const skipReason = shouldSkipPullRequest(payload, inputs.skipBots, actions);
+  const skipReason = shouldSkipPullRequest(payload, inputs.skipBots, actions, {
+    includeDrafts: includeDraftPullRequests(core.getInput('pull-request-drafts')),
+    baseAllowlist: parseBranchList(
+      core.getInput('pull-request-base-allowlist'),
+    ),
+    baseDenylist: parseBranchList(
+      core.getInput('pull-request-base-denylist'),
+    ),
+    headAllowlist: parseBranchList(
+      core.getInput('pull-request-head-allowlist'),
+    ),
+    headDenylist: parseBranchList(
+      core.getInput('pull-request-head-denylist'),
+    ),
+    labelAllowlist: parseActionList(
+      core.getInput('pull-request-label-allowlist'),
+    ),
+    labelDenylist: parseActionList(
+      core.getInput('pull-request-label-denylist'),
+    ),
+  });
   if (skipReason) {
     core.info(skipReason);
     return;
@@ -162,7 +198,10 @@ async function runIssue(
   inputs: SharedInputs,
 ): Promise<void> {
   const actions = parseIssueActions(core.getInput('issue-actions'));
-  const skipReason = shouldSkipIssue(payload, inputs.skipBots, actions);
+  const skipReason = shouldSkipIssue(payload, inputs.skipBots, actions, {
+    labelAllowlist: parseActionList(core.getInput('issue-label-allowlist')),
+    labelDenylist: parseActionList(core.getInput('issue-label-denylist')),
+  });
   if (skipReason) {
     core.info(skipReason);
     return;

@@ -34,6 +34,31 @@ export function isFirstTimeContributor(
   );
 }
 
+export function getLabelFilterReason(
+  labels: string[],
+  allowlist: string[],
+  denylist: string[],
+  subject: string,
+): string | undefined {
+  const normalizedLabels = new Set(labels.map((label) => label.toLowerCase()));
+  const normalizedAllowlist = allowlist.map((label) => label.toLowerCase());
+  const normalizedDenylist = denylist.map((label) => label.toLowerCase());
+
+  if (
+    normalizedAllowlist.length > 0 &&
+    !normalizedAllowlist.some((label) => normalizedLabels.has(label))
+  ) {
+    return `${subject} does not have an allowlisted label; skipping.`;
+  }
+
+  const denied = normalizedDenylist.find((label) => normalizedLabels.has(label));
+  if (denied) {
+    return `${subject} has denylisted label "${denied}"; skipping.`;
+  }
+
+  return undefined;
+}
+
 export function accountIsListed(
   account: GitHubAccount,
   users: string[],

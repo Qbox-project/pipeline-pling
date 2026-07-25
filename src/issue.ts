@@ -3,6 +3,7 @@ import {
   formatAccount,
   formatAccountList,
   formatBody,
+  getLabelFilterReason,
   isFirstTimeContributor,
   normalizeUsernames,
   resolveActivityAvatar,
@@ -41,6 +42,7 @@ export function shouldSkipIssue(
   payload: IssuesPayload,
   skipBots: boolean,
   actions: readonly string[] = DEFAULT_ISSUE_ACTIONS,
+  options: IssueFilterOptions = {},
 ): string | undefined {
   if (skipBots && payload.sender.type === 'Bot') {
     return 'Issue sender is a bot; skipping.';
@@ -50,7 +52,22 @@ export function shouldSkipIssue(
     return `Issue action "${payload.action}" is not enabled; skipping.`;
   }
 
+  const labelReason = getLabelFilterReason(
+    payload.issue.labels.map((label) => label.name),
+    options.labelAllowlist ?? [],
+    options.labelDenylist ?? [],
+    'Issue',
+  );
+  if (labelReason) {
+    return labelReason;
+  }
+
   return undefined;
+}
+
+export interface IssueFilterOptions {
+  labelAllowlist?: string[];
+  labelDenylist?: string[];
 }
 
 export function getIssueColor(payload: IssuesPayload): number {

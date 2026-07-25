@@ -38,6 +38,34 @@ inputs:
     description: Comma-separated issue lifecycle actions to notify for.
     required: false
     default: opened,reopened,closed
+  pull-request-drafts:
+    description: Include or exclude notifications while a pull request is a draft.
+    required: false
+    default: include
+  pull-request-base-allowlist:
+    description: Comma-separated target branch patterns to include for pull requests.
+    required: false
+  pull-request-base-denylist:
+    description: Comma-separated target branch patterns to exclude for pull requests.
+    required: false
+  pull-request-head-allowlist:
+    description: Comma-separated source branch patterns to include for pull requests.
+    required: false
+  pull-request-head-denylist:
+    description: Comma-separated source branch patterns to exclude for pull requests.
+    required: false
+  pull-request-label-allowlist:
+    description: Require at least one of these comma-separated pull request labels.
+    required: false
+  pull-request-label-denylist:
+    description: Skip pull requests with any of these comma-separated labels.
+    required: false
+  issue-label-allowlist:
+    description: Require at least one of these comma-separated issue labels.
+    required: false
+  issue-label-denylist:
+    description: Skip issues with any of these comma-separated labels.
+    required: false
   accent-color:
     description: Fallback Discord accent color as #RRGGBB or RRGGBB; branch-colors takes priority.
     required: false
