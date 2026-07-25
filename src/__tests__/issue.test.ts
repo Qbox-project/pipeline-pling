@@ -248,4 +248,23 @@ describe('buildIssueMessage', () => {
     expect(serialized).not.toContain('/issues/51');
     expect(message.components[0].accent_color).toBe(0x1f883d);
   });
+
+  it('enforces the aggregate Components V2 text budget', () => {
+    const longName = 'x'.repeat(500);
+    const payload = makePayload({
+      issue: {
+        ...makePayload().issue,
+        body: 'body '.repeat(1000),
+        milestone: { title: longName, html_url: `https://github.com/${longName}` },
+        type: { name: longName },
+      },
+    });
+    const message = buildIssueMessage(payload, { bodyMaxLength: 1000 });
+    const totalLength = textContents(message).reduce(
+      (total, content) => total + content.length,
+      0,
+    );
+
+    expect(totalLength).toBeLessThanOrEqual(4000);
+  });
 });

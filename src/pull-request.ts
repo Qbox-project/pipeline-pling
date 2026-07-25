@@ -1,6 +1,7 @@
 import {
   accountIsListed,
   DEFAULT_ACTIVITY_BODY_MAX_LENGTH,
+  enforceActivityTextBudget,
   formatAccount,
   formatAccountList,
   formatBody,
@@ -223,9 +224,12 @@ function buildMetadata(
       : '';
   rows.push(`**Author:** ${author}${firstTime}`);
 
-  const headLabel = pullRequest.head.label ?? pullRequest.head.ref;
+  const headLabel = truncate(
+    pullRequest.head.label ?? pullRequest.head.ref,
+    160,
+  );
   rows.push(
-    `**Branches:** ${formatInlineCode(headLabel)} → ${formatInlineCode(pullRequest.base.ref)}`,
+    `**Branches:** ${formatInlineCode(headLabel)} → ${formatInlineCode(truncate(pullRequest.base.ref, 160))}`,
   );
 
   if (details.has('stats')) {
@@ -270,7 +274,7 @@ function buildMetadata(
     );
     const teams = (pullRequest.requested_teams ?? [])
       .slice(0, 5)
-      .map((team) => escapeDiscordMarkdown(team.name))
+      .map((team) => escapeDiscordMarkdown(truncate(team.name, 80)))
       .join(', ');
     const requested = [reviewers, teams].filter(Boolean).join(', ');
     if (requested) {
@@ -386,6 +390,7 @@ export function buildPullRequestMessage(
         pullRequest.labels,
         options.labelColorPriority ?? [],
       );
+  enforceActivityTextBudget(components);
   const eventColors = options.eventColors ?? {};
   const eventColor =
     eventColors[getPullRequestColorKey(payload)] ?? eventColors['pull-request'];

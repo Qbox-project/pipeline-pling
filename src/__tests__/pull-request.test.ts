@@ -313,4 +313,26 @@ describe('buildPullRequestMessage', () => {
     expect(serialized).not.toContain('/pull/42');
     expect(message.components[0].accent_color).toBe(0x2f81f7);
   });
+
+  it('enforces the aggregate Components V2 text budget', () => {
+    const longName = 'x'.repeat(500);
+    const payload = makePayload({
+      pull_request: {
+        ...makePayload().pull_request,
+        body: 'body '.repeat(1000),
+        head: { ref: longName, label: longName },
+        base: { ref: longName },
+        requested_teams: Array.from({ length: 5 }, (_, index) => ({
+          name: `${index}-${longName}`,
+        })),
+      },
+    });
+    const message = buildPullRequestMessage(payload, { bodyMaxLength: 1000 });
+    const totalLength = textContents(message).reduce(
+      (total, content) => total + content.length,
+      0,
+    );
+
+    expect(totalLength).toBeLessThanOrEqual(4000);
+  });
 });

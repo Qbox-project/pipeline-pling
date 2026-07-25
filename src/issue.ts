@@ -1,6 +1,7 @@
 import {
   accountIsListed,
   DEFAULT_ACTIVITY_BODY_MAX_LENGTH,
+  enforceActivityTextBudget,
   formatAccount,
   formatAccountList,
   formatBody,
@@ -113,7 +114,7 @@ function buildMetadata(
   rows.push(`**Author:** ${author}${firstTime}`);
 
   if (details.has('type') && issue.type?.name) {
-    rows.push(`**Type:** ${formatInlineCode(issue.type.name)}`);
+    rows.push(`**Type:** ${formatInlineCode(truncate(issue.type.name, 80))}`);
   }
 
   if (details.has('labels') && issue.labels.length > 0) {
@@ -137,7 +138,9 @@ function buildMetadata(
   }
 
   if (details.has('milestone') && issue.milestone) {
-    const milestone = escapeDiscordMarkdown(issue.milestone.title);
+    const milestone = escapeDiscordMarkdown(
+      truncate(issue.milestone.title, 120),
+    );
     rows.push(
       `**Milestone:** ${
         issue.milestone.html_url
@@ -253,6 +256,7 @@ export function buildIssueMessage(
         issue.labels,
         options.labelColorPriority ?? [],
       );
+  enforceActivityTextBudget(components);
   const eventColors = options.eventColors ?? {};
   const eventColor =
     eventColors[getIssueColorKey(payload)] ?? eventColors.issue;

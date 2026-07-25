@@ -5,6 +5,7 @@ import {
 } from './format.js';
 import { ANONYMOUS_AVATAR_URL } from './types.js';
 import type {
+  ContainerComponent,
   GitHubAccount,
   GitHubRepository,
 } from './types.js';
@@ -185,4 +186,39 @@ export function formatAccountList(
       formatAccount(user, nameAnonUsers, fullAnonUsers, hideLinks),
     )
     .join(', ');
+}
+
+export function enforceActivityTextBudget(
+  components: ContainerComponent['components'],
+  maxTextLength: number = 4000,
+): void {
+  let totalLength = components.reduce(
+    (total, component) =>
+      component.type === 10 ? total + component.content.length : total,
+    0,
+  );
+
+  for (let index = components.length - 1; index >= 0; index -= 1) {
+    if (totalLength <= maxTextLength) {
+      return;
+    }
+
+    const component = components[index];
+    if (component.type !== 10) {
+      continue;
+    }
+
+    const overage = totalLength - maxTextLength;
+    const targetLength = component.content.length - overage;
+    if (targetLength <= 0) {
+      totalLength -= component.content.length;
+      components.splice(index, 1);
+      continue;
+    }
+
+    const suffix = targetLength >= 3 ? '...' : '.'.repeat(targetLength);
+    const prefixLength = Math.max(0, targetLength - suffix.length);
+    component.content = `${component.content.slice(0, prefixLength)}${suffix}`;
+    totalLength = maxTextLength;
+  }
 }
