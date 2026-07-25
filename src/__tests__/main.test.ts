@@ -284,6 +284,25 @@ describe('run', () => {
     },
   );
 
+  it('routes pull request notifications to event-specific webhook and thread overrides', async () => {
+    const pullRequestWebhook = 'https://discord.com/api/webhooks/456/pr-token';
+    mocks.context.eventName = 'pull_request_target';
+    mocks.context.payload = makePullRequestPayload();
+    setInputs({
+      'thread-id': 'fallback-thread',
+      'pull-request-webhook-url': pullRequestWebhook,
+      'pull-request-thread-id': 'pr-thread',
+    });
+
+    await run();
+
+    expect(mocks.sendDiscordWebhook).toHaveBeenCalledWith({
+      webhookUrl: pullRequestWebhook,
+      message: discordMessage,
+      threadId: 'pr-thread',
+    });
+  });
+
   it('skips pull request activities outside the configured lifecycle actions', async () => {
     mocks.context.eventName = 'pull_request_target';
     mocks.context.payload = makePullRequestPayload({ action: 'synchronize' });
@@ -369,6 +388,25 @@ describe('run', () => {
     });
     expect(mocks.sendDiscordWebhook).toHaveBeenCalledWith({
       webhookUrl: WEBHOOK_URL,
+      message: discordMessage,
+      threadId: 'issue-thread',
+    });
+  });
+
+  it('routes issue notifications to event-specific webhook and thread overrides', async () => {
+    const issueWebhook = 'https://discord.com/api/webhooks/789/issue-token';
+    mocks.context.eventName = 'issues';
+    mocks.context.payload = makeIssuePayload();
+    setInputs({
+      'thread-id': 'fallback-thread',
+      'issue-webhook-url': issueWebhook,
+      'issue-thread-id': 'issue-thread',
+    });
+
+    await run();
+
+    expect(mocks.sendDiscordWebhook).toHaveBeenCalledWith({
+      webhookUrl: issueWebhook,
       message: discordMessage,
       threadId: 'issue-thread',
     });

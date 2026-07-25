@@ -142,6 +142,10 @@ async function runPullRequest(
   payload: PullRequestPayload,
   inputs: SharedInputs,
 ): Promise<void> {
+  const webhookUrl =
+    core.getInput('pull-request-webhook-url') || inputs.webhookUrl;
+  const threadId =
+    core.getInput('pull-request-thread-id') || inputs.threadId;
   const actions = parsePullRequestActions(core.getInput('pull-request-actions'));
   const skipReason = shouldSkipPullRequest(payload, inputs.skipBots, actions, {
     includeDrafts: includeDraftPullRequests(core.getInput('pull-request-drafts')),
@@ -185,9 +189,9 @@ async function runPullRequest(
   );
 
   await sendDiscordWebhook({
-    webhookUrl: inputs.webhookUrl,
+    webhookUrl,
     message,
-    threadId: inputs.threadId,
+    threadId,
   });
 
   core.info('Discord notification sent successfully.');
@@ -197,6 +201,8 @@ async function runIssue(
   payload: IssuesPayload,
   inputs: SharedInputs,
 ): Promise<void> {
+  const webhookUrl = core.getInput('issue-webhook-url') || inputs.webhookUrl;
+  const threadId = core.getInput('issue-thread-id') || inputs.threadId;
   const actions = parseIssueActions(core.getInput('issue-actions'));
   const skipReason = shouldSkipIssue(payload, inputs.skipBots, actions, {
     labelAllowlist: parseActionList(core.getInput('issue-label-allowlist')),
@@ -223,9 +229,9 @@ async function runIssue(
   );
 
   await sendDiscordWebhook({
-    webhookUrl: inputs.webhookUrl,
+    webhookUrl,
     message,
-    threadId: inputs.threadId,
+    threadId,
   });
 
   core.info('Discord notification sent successfully.');

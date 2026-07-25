@@ -12,6 +12,18 @@ inputs:
   thread-id:
     description: Discord forum thread ID to post into.
     required: false
+  pull-request-webhook-url:
+    description: Discord webhook URL override for pull request notifications.
+    required: false
+  pull-request-thread-id:
+    description: Discord thread ID override for pull request notifications.
+    required: false
+  issue-webhook-url:
+    description: Discord webhook URL override for issue notifications.
+    required: false
+  issue-thread-id:
+    description: Discord thread ID override for issue notifications.
+    required: false
   skip-bots:
     description: Skip pushes made by bot accounts.
     required: false
