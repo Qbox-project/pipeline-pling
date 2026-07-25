@@ -1,17 +1,25 @@
 import {
+  accountIsListed,
+  formatAccount,
+  formatAccountList,
+  formatBody,
+  normalizeUsernames,
+  resolveActivityAvatar,
+  resolveRepositoryName,
+  sanitizeBody,
+} from './activity.js';
+import {
   escapeDiscordMarkdown,
   formatInlineCode,
   formatMarkdownLink,
   truncate,
 } from './format.js';
 import {
-  ANONYMOUS_AVATAR_URL,
   IS_COMPONENTS_V2,
 } from './types.js';
 import type {
   BuildPullRequestMessageOptions,
   DiscordComponentsMessage,
-  GitHubAccount,
   PullRequestPayload,
 } from './types.js';
 
@@ -29,8 +37,6 @@ export const SUPPORTED_PULL_REQUEST_ACTIONS = [
 ] as const;
 
 const DEFAULT_BODY_MAX_LENGTH = 320;
-const REPOSITORY_NAME_MAX_LENGTH = 80;
-const GITHUB_AVATAR_SIZE = 256;
 const FIRST_TIME_ASSOCIATIONS = new Set([
   'FIRST_TIMER',
   'FIRST_TIME_CONTRIBUTOR',
@@ -74,88 +80,6 @@ export function shouldSkipPullRequest(
   return undefined;
 }
 
-function normalizeUsers(users: string[]): string[] {
-  return users.map((user) => user.toLowerCase());
-}
-
-function userIsListed(user: GitHubAccount, users: string[]): boolean {
-  return users.includes(user.login.toLowerCase());
-}
-
-function formatAccount(
-  account: GitHubAccount,
-  nameAnonUsers: string[],
-  fullAnonUsers: string[],
-  hideLinks: boolean,
-): string {
-  if (
-    userIsListed(account, nameAnonUsers) ||
-    userIsListed(account, fullAnonUsers)
-  ) {
-    return 'Anonymous';
-  }
-
-  const login = escapeDiscordMarkdown(account.login);
-  return formatMarkdownLink(
-    login,
-    account.html_url ?? `https://github.com/${account.login}`,
-    hideLinks,
-  );
-}
-
-function resolveRepositoryName(
-  payload: PullRequestPayload,
-  repoName?: string,
-): string {
-  const override = repoName?.trim();
-  if (override) {
-    return truncate(override, REPOSITORY_NAME_MAX_LENGTH);
-  }
-
-  const name =
-    payload.repository.name ??
-    payload.repository.full_name.split('/').at(-1) ??
-    payload.repository.full_name;
-  return truncate(name, REPOSITORY_NAME_MAX_LENGTH);
-}
-
-function withAvatarSize(avatarUrl: string): string {
-  try {
-    const url = new URL(avatarUrl);
-    if (url.hostname === 'avatars.githubusercontent.com') {
-      url.searchParams.set('s', String(GITHUB_AVATAR_SIZE));
-      return url.toString();
-    }
-
-    if (url.hostname === 'github.com' && url.pathname.endsWith('.png')) {
-      url.searchParams.set('size', String(GITHUB_AVATAR_SIZE));
-      return url.toString();
-    }
-  } catch {
-    return avatarUrl;
-  }
-
-  return avatarUrl;
-}
-
-function resolveAvatar(
-  payload: PullRequestPayload,
-  nameAnonUsers: string[],
-  fullAnonUsers: string[],
-): string {
-  if (
-    userIsListed(payload.sender, nameAnonUsers) ||
-    userIsListed(payload.sender, fullAnonUsers)
-  ) {
-    return ANONYMOUS_AVATAR_URL;
-  }
-
-  return withAvatarSize(
-    payload.sender.avatar_url ??
-      `https://github.com/${payload.sender.login}.png?size=${GITHUB_AVATAR_SIZE}`,
-  );
-}
-
 function getActionLabel(payload: PullRequestPayload): string {
   if (payload.action === 'closed') {
     return payload.pull_request.merged ? 'merged' : 'closed';
@@ -182,44 +106,6 @@ export function getPullRequestColor(payload: PullRequestPayload): number {
   }
 
   return PR_COLORS.active;
-}
-
-function sanitizeBody(body: string | null, maxLength: number): string {
-  if (!body || maxLength <= 0) {
-    return '';
-  }
-
-  const cleaned = body
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/\r\n?/g, '\n')
-    .split('\n')
-    .map((line) => line.trimEnd())
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-
-  return truncate(cleaned, maxLength);
-}
-
-function formatBody(body: string): string {
-  return body
-    .split('\n')
-    .map((line) => `> ${escapeDiscordMarkdown(line)}`)
-    .join('\n');
-}
-
-function formatUserList(
-  users: GitHubAccount[],
-  nameAnonUsers: string[],
-  fullAnonUsers: string[],
-  hideLinks: boolean,
-): string {
-  return users
-    .slice(0, 5)
-    .map((user) =>
-      formatAccount(user, nameAnonUsers, fullAnonUsers, hideLinks),
-    )
-    .join(', ');
 }
 
 function buildMetadata(
@@ -270,7 +156,7 @@ function buildMetadata(
   }
 
   if (details.has('reviewers')) {
-    const reviewers = formatUserList(
+    const reviewers = formatAccountList(
       pullRequest.requested_reviewers,
       nameAnonUsers,
       fullAnonUsers,
@@ -288,7 +174,7 @@ function buildMetadata(
 
   if (details.has('assignees') && pullRequest.assignees.length > 0) {
     rows.push(
-      `**Assignees:** ${formatUserList(
+      `**Assignees:** ${formatAccountList(
         pullRequest.assignees,
         nameAnonUsers,
         fullAnonUsers,
@@ -308,14 +194,14 @@ export function buildPullRequestMessage(
   const useRepoUsername = options.useRepoUsername ?? true;
   const hideLinks = options.hideLinks ?? false;
   const compactMode = options.compactMode ?? false;
-  const nameAnonUsers = normalizeUsers(options.nameAnonUsers ?? []);
-  const fullAnonUsers = normalizeUsers(options.fullAnonUsers ?? []);
+  const nameAnonUsers = normalizeUsernames(options.nameAnonUsers ?? []);
+  const fullAnonUsers = normalizeUsernames(options.fullAnonUsers ?? []);
   const details = new Set(options.details ?? DEFAULT_DETAILS);
   const bodyMaxLength = options.bodyMaxLength ?? DEFAULT_BODY_MAX_LENGTH;
   const highlightFirstTimeContributors =
     options.highlightFirstTimeContributors ?? true;
   const pullRequest = payload.pull_request;
-  const isRedacted = userIsListed(pullRequest.user, fullAnonUsers);
+  const isRedacted = accountIsListed(pullRequest.user, fullAnonUsers);
   const actor = formatAccount(
     payload.sender,
     nameAnonUsers,
@@ -400,7 +286,7 @@ export function buildPullRequestMessage(
   }
 
   if (useSenderAvatar) {
-    message.avatar_url = resolveAvatar(
+    message.avatar_url = resolveActivityAvatar(
       payload,
       nameAnonUsers,
       fullAnonUsers,
