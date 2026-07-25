@@ -148,7 +148,7 @@ function parseBodyMaxLength(input: string): number {
     return 320;
   }
 
-  if (!/^\d+$/.test(value)) {
+  if (!/^-?\d+$/.test(value)) {
     core.warning(
       `Invalid body-max-length value "${input}"; defaulting to 320.`,
     );
@@ -156,10 +156,10 @@ function parseBodyMaxLength(input: string): number {
   }
 
   const parsed = Number(value);
-  const clamped = Math.min(parsed, 1000);
+  const clamped = Math.min(Math.max(parsed, 0), 1000);
   if (clamped !== parsed) {
     core.warning(
-      `body-max-length value "${input}" exceeds 1000; clamping to 1000.`,
+      `body-max-length value "${input}" is outside 0 to 1000; clamping to ${clamped}.`,
     );
   }
   return clamped;

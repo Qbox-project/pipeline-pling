@@ -508,7 +508,7 @@ describe('run', () => {
       'Unknown pull-request-details value "mystery"; ignoring.',
     );
     expect(mocks.warning).toHaveBeenCalledWith(
-      'body-max-length value "2000" exceeds 1000; clamping to 1000.',
+      'body-max-length value "2000" is outside 0 to 1000; clamping to 1000.',
     );
     expect(mocks.warning).toHaveBeenCalledWith(
       'Invalid pull-request-size-thresholds value "large,larger,largest"; expected three ascending non-negative integers. Defaulting to 100,500,1000.',
@@ -521,6 +521,23 @@ describe('run', () => {
         highlightFirstTimeContributors: false,
         sizeThresholds: [100, 500, 1000],
       }),
+    );
+  });
+
+  it('clamps negative activity body limits to zero', async () => {
+    const payload = makeIssuePayload();
+    mocks.context.eventName = 'issues';
+    mocks.context.payload = payload;
+    setInputs({ 'body-max-length': '-10' });
+
+    await run();
+
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'body-max-length value "-10" is outside 0 to 1000; clamping to 0.',
+    );
+    expect(mocks.buildIssueMessage).toHaveBeenCalledWith(
+      payload,
+      expect.objectContaining({ bodyMaxLength: 0 }),
     );
   });
 
