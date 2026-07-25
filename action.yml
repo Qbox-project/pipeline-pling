@@ -7,10 +7,10 @@ branding:
 
 inputs:
   webhook-url:
-    description: Discord webhook URL used to send notifications.
+    description: Default Discord webhook URL used to send notifications.
     required: true
   thread-id:
-    description: Discord forum thread ID to post into.
+    description: Default Discord forum thread ID to post into.
     required: false
   pull-request-webhook-url:
     description: Discord webhook URL override for pull request notifications.
@@ -25,7 +25,7 @@ inputs:
     description: Discord thread ID override for issue notifications.
     required: false
   skip-bots:
-    description: Skip pushes made by bot accounts.
+    description: Skip activity performed by bot accounts.
     required: false
     default: "true"
   anon-keyword:
@@ -37,10 +37,10 @@ inputs:
     required: false
     default: "!silent"
   branch-allowlist:
-    description: Comma-separated branch names to include in notifications.
+    description: Comma-separated pushed branch names to include in notifications.
     required: false
   branch-denylist:
-    description: Comma-separated branch names to exclude from notifications.
+    description: Comma-separated pushed branch names to exclude from notifications.
     required: false
   pull-request-actions:
     description: Comma-separated pull request lifecycle actions to notify for.
@@ -108,10 +108,10 @@ inputs:
     description: Fully redact pull requests and issues carrying any of these labels.
     required: false
   accent-color:
-    description: Fallback Discord accent color as #RRGGBB or RRGGBB; branch-colors takes priority.
+    description: Fallback Discord accent color as #RRGGBB or RRGGBB; branch, label, and event colors take priority.
     required: false
   use-sender-avatar:
-    description: Use the push sender's GitHub avatar as the webhook avatar.
+    description: Use the event sender's GitHub avatar as the webhook avatar.
     required: false
     default: "true"
   use-repo-username:
@@ -122,21 +122,21 @@ inputs:
     description: Override the repository label and webhook username.
     required: false
   hide-links:
-    description: Remove GitHub links and the View changes button from notifications.
+    description: Remove GitHub links and action buttons from notifications.
     required: false
     default: "false"
   compact-mode:
-    description: Display commits on consecutive lines without descriptions or authors.
+    description: Condense push commits and omit secondary pull request or issue details.
     required: false
     default: "false"
   branch-colors:
     description: Per-branch accent colors as pattern=#RRGGBB entries separated by commas or newlines.
     required: false
   name-anon-users:
-    description: Comma-separated GitHub usernames shown as Anonymous while commit details remain visible.
+    description: Comma-separated GitHub usernames shown as Anonymous while activity details remain visible.
     required: false
   full-anon-users:
-    description: Comma-separated GitHub usernames whose authored or co-authored commits are fully redacted.
+    description: Comma-separated GitHub usernames whose commits, pull requests, or issues are fully redacted.
     required: false
 
 runs:

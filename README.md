@@ -1,18 +1,18 @@
 # Pipeline Pling
 
-Clear, customizable Discord notifications for every GitHub push.
+Clear, customizable Discord notifications for pushes, pull requests, and issues.
 
-Pipeline Pling turns a push into a readable Discord message with the sender, branch, commits, authors, co-authors, and links back to GitHub. It uses Discord Components V2, supports per-branch styling, and includes privacy controls for teams that need them.
+Pipeline Pling turns GitHub activity into readable Discord cards. Push cards show commits and contributors, pull request cards show lifecycle state and review context, and issue cards show the information needed for triage. It uses Discord Components V2, needs no checkout or GitHub API token, and includes routing, styling, filtering, and privacy controls.
 
 ![A Pipeline Pling notification showing two linked commits in Discord](screenshots/default.png)
 
 ## Why Pipeline Pling?
 
-- **Readable at a glance:** See who pushed, where they pushed, and what changed without opening GitHub.
-- **Useful links:** Jump directly to branches, commits, pull requests, contributor profiles, or the full comparison.
-- **Flexible delivery:** Filter branches, skip bot pushes, post into forum threads, or silence individual commits.
-- **Custom appearance:** Use repository names, sender avatars, custom names, and branch-specific accent colors.
-- **Privacy controls:** Hide links, anonymize names, or fully redact selected commits and contributors.
+- **Readable at a glance:** See what was pushed, opened, merged, reopened, or closed without opening GitHub.
+- **Useful links:** Jump directly to branches, commits, pull requests, changed files, checks, issues, or contributor profiles.
+- **Flexible delivery:** Filter branches and labels, exclude drafts or bots, and route each activity type to a different webhook or thread.
+- **Custom appearance:** Use semantic lifecycle colors, GitHub label colors, repository names, sender avatars, and compact cards.
+- **Privacy controls:** Hide links, anonymize names, or fully redact selected commits, contributors, pull requests, and issues.
 - **Reliable failures:** Retry a Discord rate limit once and surface clear errors for rejected webhook requests.
 
 ## Quick start
@@ -29,13 +29,17 @@ In your GitHub repository, open **Settings → Secrets and variables → Actions
 
 ### 3. Add the workflow
 
-Create `.github/workflows/discord-push.yml` in the repository you want to watch:
+Create `.github/workflows/discord-notifications.yml` in the repository you want to watch:
 
 ```yaml
-name: Discord push notifications
+name: Discord notifications
 
 on:
   push:
+  pull_request_target:
+    types: [opened, reopened, converted_to_draft, ready_for_review, closed]
+  issues:
+    types: [opened, reopened, closed]
 
 permissions: {}
 
@@ -49,7 +53,9 @@ jobs:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
 ```
 
-That is all the action needs. You do not need to check out the repository, grant `GITHUB_TOKEN` permissions, define environment variables, or handle action outputs.
+That is all the action needs. Do not add a checkout step to this notification job. You do not need `GITHUB_TOKEN` permissions, repository code, environment variables, or action outputs.
+
+`pull_request_target` is used so the Discord webhook secret remains available for pull requests from forks and notifications still run for conflicted pull requests. It is safe here because this job only reads GitHub's event payload and runs the published Pipeline Pling action; it must never checkout or execute the pull request's code. If you only want notifications for trusted, same-repository branches, you can use `pull_request` instead.
 
 ## Configuration
 
@@ -61,43 +67,134 @@ All inputs are optional unless marked as required.
 | ------------- | -------- | ------- | ------------------------------------------------------------------------------- |
 | `webhook-url` | Yes      | —       | Discord webhook URL used to send the notification. Store it as a GitHub secret. |
 | `thread-id`   | No       | —       | Discord forum thread ID to post into.                                           |
+| `pull-request-webhook-url` | No | `webhook-url` | Webhook override for pull request cards. |
+| `pull-request-thread-id` | No | `thread-id` | Thread override for pull request cards. |
+| `issue-webhook-url` | No | `webhook-url` | Webhook override for issue cards. |
+| `issue-thread-id` | No | `thread-id` | Thread override for issue cards. |
 
 ### Filtering
 
 | Input              | Required | Default   | Description                                                                       |
 | ------------------ | -------- | --------- | --------------------------------------------------------------------------------- |
-| `skip-bots`        | No       | `true`    | Skip pushes made by bot accounts.                                                 |
+| `skip-bots`        | No       | `true`    | Skip activity performed by bot accounts.                                          |
 | `silent-keyword`   | No       | `!silent` | Omit a commit when this is the first non-empty line of its commit body.           |
 | `branch-allowlist` | No       | —         | Comma-separated branch names to include. Names use case-sensitive exact matching. |
 | `branch-denylist`  | No       | —         | Comma-separated branch names to exclude. Names use case-sensitive exact matching. |
 
 When both branch lists are set, a branch must appear in the allowlist and not appear in the denylist. Empty lists are ignored.
 
+### Pull request and issue filtering
+
+| Input | Default | Description |
+| ----- | ------- | ----------- |
+| `pull-request-actions` | `opened,reopened,converted_to_draft,ready_for_review,closed` | Enabled PR lifecycle actions. Add `synchronize` to notify for every new head commit. A `closed` event is rendered as merged or unmerged. |
+| `issue-actions` | `opened,reopened,closed` | Enabled issue lifecycle actions. |
+| `pull-request-drafts` | `include` | Use `exclude` to suppress cards while a PR is still a draft; its `ready_for_review` transition remains eligible. |
+| `pull-request-base-allowlist` / `pull-request-base-denylist` | — | Target branch patterns to include or exclude. |
+| `pull-request-head-allowlist` / `pull-request-head-denylist` | — | Source branch patterns to include or exclude; fork-qualified values such as `contributor:feature/**` are supported. |
+| `pull-request-label-allowlist` / `pull-request-label-denylist` | — | Require any allowlisted label or reject any denylisted label. |
+| `issue-label-allowlist` / `issue-label-denylist` | — | Equivalent label filters for issues. |
+
+PR branch patterns are case-sensitive. `*` matches one path segment and `**` matches across segments. Label matching is case-insensitive and exact. Denylists win when both lists match.
+
 ### Appearance
 
 | Input               | Required | Default          | Description                                                                                                      |
 | ------------------- | -------- | ---------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `accent-color`      | No       | Repository color | Accent color as `#RRGGBB` or `RRGGBB`. Invalid values fall back to a color derived from the repository name.     |
+| `accent-color`      | No       | Event default | Fallback accent as `#RRGGBB` or `RRGGBB`; pushes otherwise use a repository color and activity cards use semantic colors. |
 | `branch-colors`     | No       | —                | Per-branch colors as `pattern=#RRGGBB` entries separated by commas or newlines. The first matching pattern wins. |
-| `use-sender-avatar` | No       | `true`           | Use the push sender's GitHub avatar as the webhook avatar.                                                       |
+| `use-sender-avatar` | No       | `true`           | Use the event sender's GitHub avatar as the webhook avatar.                                                      |
 | `use-repo-username` | No       | `true`           | Use the repository name as the webhook username.                                                                 |
 | `repo-name`         | No       | Repository name  | Override the repository label and webhook username, up to Discord's 80-character limit.                          |
-| `hide-links`        | No       | `false`          | Remove actor, branch, commit, pull request, and profile links, plus the **View changes** button.                 |
-| `compact-mode`      | No       | `false`          | Display commits on consecutive lines with their SHA and title, without descriptions or authors.                 |
+| `hide-links`        | No       | `false`          | Remove generated GitHub links and all action buttons.                                                            |
+| `compact-mode`      | No       | `false`          | Condense push commits and omit secondary PR/issue metadata and body excerpts.                                    |
+| `pull-request-details` | No | `body,labels,reviewers,assignees,stats` | Metadata shown on standard PR cards. |
+| `issue-details` | No | `body,type,labels,assignees,milestone` | Metadata shown on standard issue cards. |
+| `body-max-length` | No | `320` | Maximum escaped PR/issue body excerpt length from `0` to `1000`; `0` hides bodies. |
+| `pull-request-size-thresholds` | No | `100,500,1000` | Changed-line thresholds for S, M, L, and XL PR badges. |
+| `highlight-first-time-contributors` | No | `true` | Show a first-time-contributor badge from GitHub's author association. |
+| `event-colors` | No | Semantic colors | State colors as `event.action=#RRGGBB`, separated by commas or newlines. |
+| `label-color-priority` | No | — | Ordered labels whose GitHub color overrides the event color. |
 
 Branch color patterns are case-sensitive. `*` matches one path segment, while `**` can match across segments. A matching `branch-colors` rule takes priority over `accent-color`.
+
+For PRs and issues, color precedence is: first matching `label-color-priority` label, the most specific `event-colors` key, `accent-color`, then the semantic default. Supported keys are `pull-request`, `pull-request.opened`, `pull-request.reopened`, `pull-request.draft`, `pull-request.ready`, `pull-request.merged`, `pull-request.closed`, `pull-request.synchronize`, `issue`, `issue.opened`, `issue.reopened`, and `issue.closed`.
 
 ### Privacy
 
 | Input             | Required | Default | Description                                                                                                |
 | ----------------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------- |
 | `anon-keyword`    | No       | `!anon` | Fully redact a commit when this is the first non-empty line of its commit body.                            |
-| `name-anon-users` | No       | —       | Comma-separated GitHub usernames whose names are shown as `Anonymous` while commit details remain visible. |
-| `full-anon-users` | No       | —       | Comma-separated GitHub usernames whose authored or co-authored commits are fully redacted.                 |
+| `name-anon-users` | No       | —       | GitHub usernames shown as `Anonymous` while activity details remain visible.                               |
+| `full-anon-users` | No       | —       | GitHub usernames whose commits, pull requests, or issues are fully redacted.                               |
+| `redact-labels`   | No       | —       | Fully redact a PR or issue carrying any listed label.                                                       |
 
-Username matching is case-insensitive and ignores empty entries.
+Username and privacy-label matching is case-insensitive and ignores empty entries. On PRs and issues, `name-anon-users` masks actors and authors while retaining the activity; `full-anon-users` fully redacts items created by a listed user. Label redaction removes the number, title, body, metadata, links, buttons, and label-derived color. GitHub-controlled content can never ping Discord users or roles.
 
 ## Common recipes
+
+### Choose lifecycle activity
+
+GitHub's `on.<event>.types` decides when a runner starts. The action inputs are a second, defensive filter. Keep both aligned:
+
+```yaml
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, closed, synchronize]
+  issues:
+    types: [opened, reopened, closed]
+
+jobs:
+  notify-discord:
+    permissions: {}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Qbox-project/pipeline-pling@v1
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          pull-request-actions: opened,reopened,ready_for_review,closed,synchronize
+```
+
+### Route activity to separate Discord destinations
+
+The base webhook and thread remain the fallback for pushes. Overrides can send PRs and issues elsewhere:
+
+```yaml
+with:
+  webhook-url: ${{ secrets.DISCORD_PUSH_WEBHOOK_URL }}
+  pull-request-webhook-url: ${{ secrets.DISCORD_PR_WEBHOOK_URL }}
+  issue-webhook-url: ${{ secrets.DISCORD_ISSUE_WEBHOOK_URL }}
+  pull-request-thread-id: ${{ vars.DISCORD_PR_THREAD_ID }}
+  issue-thread-id: ${{ vars.DISCORD_ISSUE_THREAD_ID }}
+```
+
+### Triage by label and color
+
+Only post externally visible issues, hide sensitive cards, and borrow the highest-priority GitHub label color:
+
+```yaml
+with:
+  webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  issue-label-allowlist: public,community
+  issue-label-denylist: no-discord
+  redact-labels: security,private
+  label-color-priority: security,bug,enhancement
+  event-colors: |
+    pull-request.merged=#8250DF
+    pull-request.closed=#CF222E
+    issue.opened=#1F883D
+```
+
+### Tune activity card density
+
+```yaml
+with:
+  webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  body-max-length: 180
+  pull-request-details: body,labels,reviewers,stats
+  issue-details: body,type,labels,assignees
+  pull-request-size-thresholds: 50,250,1000
+```
 
 ### Post into a Discord forum thread
 
@@ -253,9 +350,11 @@ Compact mode includes every commit that fits within Discord's message limit; if 
 
 Treat the Discord webhook URL like a password. Store it in a GitHub Actions secret, never commit it, and rotate it in Discord if it is exposed.
 
-Pipeline Pling reads the `push` event payload supplied by GitHub and sends the rendered message to your configured Discord webhook. It does not require `GITHUB_TOKEN` permissions or a checked-out copy of your repository.
+Pipeline Pling reads the `push`, `pull_request`, `pull_request_target`, or `issues` payload supplied by GitHub and sends a rendered message to the resolved Discord webhook. It does not call the GitHub API and does not require `GITHUB_TOKEN` permissions or a checked-out copy of your repository.
 
-Commit titles, descriptions, contributor names, and branch labels are treated as untrusted text and cannot inject structural Discord Markdown. Pipeline Pling's own GitHub links remain interactive, while `allowed_mentions` prevents commit content from notifying Discord users or roles.
+Use `pull_request_target` only in a notification job that never checks out or executes pull request code. That event runs in the base repository context, which makes the webhook secret available for fork contributions but would make an untrusted checkout dangerous. Keep `permissions: {}` and pin third-party actions according to your security policy.
+
+Titles, bodies, labels, branch names, contributor names, and other payload values are treated as untrusted text and cannot inject structural Discord Markdown. Pipeline Pling's own GitHub links remain interactive, while `allowed_mentions` prevents any payload content from notifying Discord users or roles.
 
 ### Choose a version
 
@@ -264,7 +363,7 @@ The quick-start example uses `@v1`, the recommended option for most users. This 
 Choose the level of update control that fits your project:
 
 - `Qbox-project/pipeline-pling@v1` — recommended; follows the latest compatible v1 release.
-- `Qbox-project/pipeline-pling@v1.4.0` — stays on a specific release until you update it manually.
+- `Qbox-project/pipeline-pling@v1.5.0` — stays on a specific release until you update it manually.
 - `Qbox-project/pipeline-pling@<full-commit-sha>` — pins the exact reviewed code and provides the strongest protection against a tag being moved.
 
 GitHub recommends major tags for convenient action versioning and full-length commit SHAs when immutability is required. See GitHub's guidance on [managing custom actions](https://docs.github.com/en/actions/how-tos/create-and-publish-actions/manage-custom-actions) and [secure use of third-party actions](https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions).
@@ -273,9 +372,11 @@ GitHub recommends major tags for convenient action versioning and full-length co
 
 ### The workflow ran, but no message appeared
 
-Check the action log for a skip reason. Pipeline Pling intentionally skips non-push events, empty pushes, bot pushes when `skip-bots` is enabled, branches excluded by your filters, and pushes where every commit is silent.
+Check the action log for a skip reason. Pipeline Pling intentionally skips unsupported events, malformed payloads, disabled lifecycle actions, bots when `skip-bots` is enabled, excluded branches or labels, drafts when excluded, empty pushes, and pushes where every commit is silent.
 
-Branch allowlists and denylists use case-sensitive exact matching. For example, `Develop` does not match `develop`, and `fix/*` is only supported by `branch-colors`, not the branch allowlist.
+Push branch allowlists and denylists use case-sensitive exact matching. PR base/head filters support the same case-sensitive `*` and `**` patterns as branch colors. Label matching is case-insensitive and exact.
+
+If a PR or issue action never starts a workflow, check the workflow's `on.<event>.types`; action inputs can skip a started run but cannot cause GitHub to start one. The `issues` workflow file must exist on the default branch.
 
 ### Discord rejected the webhook
 
@@ -285,7 +386,7 @@ Webhook requests time out after 15 seconds instead of leaving the job waiting in
 
 ### The accent color did not apply
 
-Check the workflow log for a warning. Colors must contain exactly six hexadecimal digits, with an optional leading `#`. Invalid values are ignored, and the action falls back to `accent-color` or the repository-derived color.
+Check the workflow log for a warning. Colors must contain exactly six hexadecimal digits, with an optional leading `#`. Push colors resolve from `branch-colors`, `accent-color`, then the repository color. Activity colors resolve from prioritized GitHub labels, `event-colors`, `accent-color`, then semantic state colors.
 
 ## Development
 
@@ -306,7 +407,7 @@ The `.secrets` file is ignored by Git. Never commit a real webhook URL.
 
 ### Releasing
 
-Publish a GitHub release with a tag that exactly matches the version in `package.json`, prefixed with `v` (for example, package version `1.4.0` uses tag `v1.4.0`). The release workflow validates the tag, runs all checks, builds the minified Node.js action bundle, commits the bundle to the release tag, and updates the floating major tag.
+Publish a GitHub release with a tag that exactly matches the version in `package.json`, prefixed with `v` (for example, package version `1.5.0` uses tag `v1.5.0`). The release workflow validates the tag, runs all checks, builds the minified Node.js action bundle, commits the bundle to the release tag, and updates the floating major tag.
 
 This workflow intentionally moves the release tag to the generated build commit after the release is published, so it requires mutable GitHub releases. Before enabling immutable releases, change the process to build `dist/index.js` into the release commit before creating its tag.
 
