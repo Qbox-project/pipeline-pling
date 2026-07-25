@@ -180,6 +180,7 @@ describe('buildPullRequestMessage', () => {
     expect(text).toContain('First-time contributor');
     expect(text).toContain('contributor:feature/notifications');
     expect(text).toContain('+120 −10 across 4 files');
+    expect(text).toContain('**Size:** M');
     expect(text).toContain('enhancement');
     expect(text).toContain('reviewer');
     expect(text).toContain('Core team');
@@ -248,6 +249,14 @@ describe('buildPullRequestMessage', () => {
     expect(text).not.toContain('**Changes:**');
     expect(text).not.toContain('First-time contributor');
     expect(text).toContain('...');
+  });
+
+  it('uses configurable changed-line size thresholds', () => {
+    const message = buildPullRequestMessage(makePayload(), {
+      sizeThresholds: [10, 50, 100],
+    });
+
+    expect(textContents(message).join('\n')).toContain('**Size:** XL');
   });
 
   it('anonymizes listed names and sender avatars', () => {

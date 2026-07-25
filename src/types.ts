@@ -182,6 +182,7 @@ export interface BuildPullRequestMessageOptions {
   bodyMaxLength?: number;
   details?: string[];
   highlightFirstTimeContributors?: boolean;
+  sizeThresholds?: [number, number, number];
 }
 
 export interface BuildIssueMessageOptions {

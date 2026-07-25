@@ -6,8 +6,10 @@ import { sendDiscordWebhook } from './discord.js';
 import {
   buildIssueMessage,
   DEFAULT_ISSUE_ACTIONS,
+  DEFAULT_ISSUE_DETAILS,
   shouldSkipIssue,
   SUPPORTED_ISSUE_ACTIONS,
+  SUPPORTED_ISSUE_DETAILS,
 } from './issue.js';
 import {
   buildDiscordMessage,
@@ -19,10 +21,13 @@ import {
 } from './message.js';
 import {
   buildPullRequestMessage,
+  DEFAULT_PULL_REQUEST_DETAILS,
+  DEFAULT_PULL_REQUEST_SIZE_THRESHOLDS,
   DEFAULT_PULL_REQUEST_ACTIONS,
   parseActionList,
   shouldSkipPullRequest,
   SUPPORTED_PULL_REQUEST_ACTIONS,
+  SUPPORTED_PULL_REQUEST_DETAILS,
 } from './pull-request.js';
 import type {
   IssuesPayload,
@@ -108,6 +113,74 @@ function includeDraftPullRequests(input: string): boolean {
   return true;
 }
 
+function parseDetails(
+  input: string,
+  defaults: readonly string[],
+  supportedValues: readonly string[],
+  inputName: string,
+): string[] {
+  if (!input.trim()) {
+    return [...defaults];
+  }
+
+  const configured = parseActionList(input);
+  const supported = new Set(supportedValues);
+  const valid = configured.filter((detail) => supported.has(detail));
+
+  for (const detail of configured) {
+    if (!supported.has(detail)) {
+      core.warning(`Unknown ${inputName} value "${detail}"; ignoring.`);
+    }
+  }
+
+  return valid;
+}
+
+function parseBodyMaxLength(input: string): number {
+  const value = input.trim();
+  if (!value) {
+    return 320;
+  }
+
+  if (!/^\d+$/.test(value)) {
+    core.warning(
+      `Invalid body-max-length value "${input}"; defaulting to 320.`,
+    );
+    return 320;
+  }
+
+  const parsed = Number(value);
+  const clamped = Math.min(parsed, 1000);
+  if (clamped !== parsed) {
+    core.warning(
+      `body-max-length value "${input}" exceeds 1000; clamping to 1000.`,
+    );
+  }
+  return clamped;
+}
+
+function parsePullRequestSizeThresholds(
+  input: string,
+): [number, number, number] {
+  if (!input.trim()) {
+    return [...DEFAULT_PULL_REQUEST_SIZE_THRESHOLDS];
+  }
+
+  const values = input.split(',').map((entry) => Number(entry.trim()));
+  if (
+    values.length !== 3 ||
+    values.some((value) => !Number.isInteger(value) || value < 0) ||
+    !(values[0] < values[1] && values[1] < values[2])
+  ) {
+    core.warning(
+      `Invalid pull-request-size-thresholds value "${input}"; expected three ascending non-negative integers. Defaulting to 100,500,1000.`,
+    );
+    return [...DEFAULT_PULL_REQUEST_SIZE_THRESHOLDS];
+  }
+
+  return [values[0], values[1], values[2]];
+}
+
 interface SharedInputs {
   skipBots: boolean;
   webhookUrl: string;
@@ -182,6 +255,19 @@ async function runPullRequest(
     compactMode: inputs.compactMode,
     nameAnonUsers: inputs.nameAnonUsers,
     fullAnonUsers: inputs.fullAnonUsers,
+    bodyMaxLength: parseBodyMaxLength(core.getInput('body-max-length')),
+    details: parseDetails(
+      core.getInput('pull-request-details'),
+      DEFAULT_PULL_REQUEST_DETAILS,
+      SUPPORTED_PULL_REQUEST_DETAILS,
+      'pull-request-details',
+    ),
+    highlightFirstTimeContributors: core.getBooleanInput(
+      'highlight-first-time-contributors',
+    ),
+    sizeThresholds: parsePullRequestSizeThresholds(
+      core.getInput('pull-request-size-thresholds'),
+    ),
   });
 
   core.info(
@@ -222,6 +308,16 @@ async function runIssue(
     compactMode: inputs.compactMode,
     nameAnonUsers: inputs.nameAnonUsers,
     fullAnonUsers: inputs.fullAnonUsers,
+    bodyMaxLength: parseBodyMaxLength(core.getInput('body-max-length')),
+    details: parseDetails(
+      core.getInput('issue-details'),
+      DEFAULT_ISSUE_DETAILS,
+      SUPPORTED_ISSUE_DETAILS,
+      'issue-details',
+    ),
+    highlightFirstTimeContributors: core.getBooleanInput(
+      'highlight-first-time-contributors',
+    ),
   });
 
   core.info(

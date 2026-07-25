@@ -220,6 +220,7 @@ function setInputs(
     'use-repo-username': true,
     'hide-links': false,
     'compact-mode': false,
+    'highlight-first-time-contributors': true,
     ...booleanInputs,
   };
 
@@ -275,6 +276,10 @@ describe('run', () => {
         compactMode: false,
         nameAnonUsers: [],
         fullAnonUsers: [],
+        bodyMaxLength: 320,
+        details: ['body', 'labels', 'reviewers', 'assignees', 'stats'],
+        highlightFirstTimeContributors: true,
+        sizeThresholds: [100, 500, 1000],
       });
       expect(mocks.sendDiscordWebhook).toHaveBeenCalledWith({
         webhookUrl: WEBHOOK_URL,
@@ -385,6 +390,9 @@ describe('run', () => {
       compactMode: false,
       nameAnonUsers: [],
       fullAnonUsers: [],
+      bodyMaxLength: 320,
+      details: ['body', 'type', 'labels', 'assignees', 'milestone'],
+      highlightFirstTimeContributors: true,
     });
     expect(mocks.sendDiscordWebhook).toHaveBeenCalledWith({
       webhookUrl: WEBHOOK_URL,
@@ -455,6 +463,41 @@ describe('run', () => {
       'Issue has denylisted label "internal"; skipping.',
     );
     expect(mocks.sendDiscordWebhook).not.toHaveBeenCalled();
+  });
+
+  it('parses activity display controls and warns about invalid values', async () => {
+    const payload = makePullRequestPayload();
+    mocks.context.eventName = 'pull_request';
+    mocks.context.payload = payload;
+    setInputs(
+      {
+        'pull-request-details': 'body,labels,mystery',
+        'body-max-length': '2000',
+        'pull-request-size-thresholds': 'large,larger,largest',
+      },
+      { 'highlight-first-time-contributors': false },
+    );
+
+    await run();
+
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'Unknown pull-request-details value "mystery"; ignoring.',
+    );
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'body-max-length value "2000" exceeds 1000; clamping to 1000.',
+    );
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'Invalid pull-request-size-thresholds value "large,larger,largest"; expected three ascending non-negative integers. Defaulting to 100,500,1000.',
+    );
+    expect(mocks.buildPullRequestMessage).toHaveBeenCalledWith(
+      payload,
+      expect.objectContaining({
+        bodyMaxLength: 1000,
+        details: ['body', 'labels'],
+        highlightFirstTimeContributors: false,
+        sizeThresholds: [100, 500, 1000],
+      }),
+    );
   });
 
   it('parses action inputs and passes them through to rendering and delivery', async () => {

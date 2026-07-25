@@ -1,5 +1,6 @@
 import {
   accountIsListed,
+  DEFAULT_ACTIVITY_BODY_MAX_LENGTH,
   formatAccount,
   formatAccountList,
   formatBody,
@@ -39,7 +40,6 @@ export const SUPPORTED_PULL_REQUEST_ACTIONS = [
   'synchronize',
 ] as const;
 
-const DEFAULT_BODY_MAX_LENGTH = 320;
 
 const PR_COLORS = {
   active: 0x2f81f7,
@@ -48,12 +48,20 @@ const PR_COLORS = {
   closed: 0xcf222e,
 } as const;
 
-const DEFAULT_DETAILS = [
+export const DEFAULT_PULL_REQUEST_DETAILS = [
   'body',
   'labels',
   'reviewers',
   'assignees',
   'stats',
+];
+export const SUPPORTED_PULL_REQUEST_DETAILS = [
+  ...DEFAULT_PULL_REQUEST_DETAILS,
+] as const;
+export const DEFAULT_PULL_REQUEST_SIZE_THRESHOLDS: [number, number, number] = [
+  100,
+  500,
+  1000,
 ];
 
 export function parseActionList(input: string): string[] {
@@ -176,6 +184,7 @@ function buildMetadata(
   fullAnonUsers: string[],
   hideLinks: boolean,
   highlightFirstTimeContributors: boolean,
+  sizeThresholds: [number, number, number],
 ): string {
   const pullRequest = payload.pull_request;
   const rows: string[] = [];
@@ -198,12 +207,27 @@ function buildMetadata(
   );
 
   if (details.has('stats')) {
-    const additions = pullRequest.additions ?? 0;
-    const deletions = pullRequest.deletions ?? 0;
-    const changedFiles = pullRequest.changed_files ?? 0;
-    rows.push(
-      `**Changes:** +${additions} −${deletions} across ${changedFiles} ${changedFiles === 1 ? 'file' : 'files'}`,
-    );
+    if (
+      pullRequest.additions !== undefined ||
+      pullRequest.deletions !== undefined ||
+      pullRequest.changed_files !== undefined
+    ) {
+      const additions = pullRequest.additions ?? 0;
+      const deletions = pullRequest.deletions ?? 0;
+      const changedFiles = pullRequest.changed_files ?? 0;
+      const changedLines = additions + deletions;
+      const size =
+        changedLines <= sizeThresholds[0]
+          ? 'S'
+          : changedLines <= sizeThresholds[1]
+            ? 'M'
+            : changedLines <= sizeThresholds[2]
+              ? 'L'
+              : 'XL';
+      rows.push(
+        `**Changes:** +${additions} −${deletions} across ${changedFiles} ${changedFiles === 1 ? 'file' : 'files'} · **Size:** ${size}`,
+      );
+    }
   }
 
   if (details.has('labels') && pullRequest.labels.length > 0) {
@@ -256,10 +280,13 @@ export function buildPullRequestMessage(
   const compactMode = options.compactMode ?? false;
   const nameAnonUsers = normalizeUsernames(options.nameAnonUsers ?? []);
   const fullAnonUsers = normalizeUsernames(options.fullAnonUsers ?? []);
-  const details = new Set(options.details ?? DEFAULT_DETAILS);
-  const bodyMaxLength = options.bodyMaxLength ?? DEFAULT_BODY_MAX_LENGTH;
+  const details = new Set(options.details ?? DEFAULT_PULL_REQUEST_DETAILS);
+  const bodyMaxLength =
+    options.bodyMaxLength ?? DEFAULT_ACTIVITY_BODY_MAX_LENGTH;
   const highlightFirstTimeContributors =
     options.highlightFirstTimeContributors ?? true;
+  const sizeThresholds =
+    options.sizeThresholds ?? DEFAULT_PULL_REQUEST_SIZE_THRESHOLDS;
   const pullRequest = payload.pull_request;
   const isRedacted = accountIsListed(pullRequest.user, fullAnonUsers);
   const actor = formatAccount(
@@ -304,6 +331,7 @@ export function buildPullRequestMessage(
           fullAnonUsers,
           hideLinks,
           highlightFirstTimeContributors,
+          sizeThresholds,
         ),
       });
 

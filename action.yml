@@ -78,6 +78,26 @@ inputs:
   issue-label-denylist:
     description: Skip issues with any of these comma-separated labels.
     required: false
+  pull-request-details:
+    description: Comma-separated pull request card details to show.
+    required: false
+    default: body,labels,reviewers,assignees,stats
+  issue-details:
+    description: Comma-separated issue card details to show.
+    required: false
+    default: body,type,labels,assignees,milestone
+  body-max-length:
+    description: Maximum pull request or issue body excerpt length from 0 to 1000.
+    required: false
+    default: "320"
+  pull-request-size-thresholds:
+    description: Three ascending changed-line thresholds for S, M, L, and XL pull request badges.
+    required: false
+    default: 100,500,1000
+  highlight-first-time-contributors:
+    description: Highlight pull requests and issues from first-time contributors.
+    required: false
+    default: "true"
   accent-color:
     description: Fallback Discord accent color as #RRGGBB or RRGGBB; branch-colors takes priority.
     required: false

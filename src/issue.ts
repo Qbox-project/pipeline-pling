@@ -1,5 +1,6 @@
 import {
   accountIsListed,
+  DEFAULT_ACTIVITY_BODY_MAX_LENGTH,
   formatAccount,
   formatAccountList,
   formatBody,
@@ -31,8 +32,14 @@ export const DEFAULT_ISSUE_ACTIONS = [
 
 export const SUPPORTED_ISSUE_ACTIONS = [...DEFAULT_ISSUE_ACTIONS] as const;
 
-const DEFAULT_BODY_MAX_LENGTH = 320;
-const DEFAULT_DETAILS = ['body', 'type', 'labels', 'assignees', 'milestone'];
+export const DEFAULT_ISSUE_DETAILS = [
+  'body',
+  'type',
+  'labels',
+  'assignees',
+  'milestone',
+];
+export const SUPPORTED_ISSUE_DETAILS = [...DEFAULT_ISSUE_DETAILS] as const;
 const ISSUE_COLORS = {
   open: 0x1f883d,
   closed: 0x8250df,
@@ -159,8 +166,9 @@ export function buildIssueMessage(
   const compactMode = options.compactMode ?? false;
   const nameAnonUsers = normalizeUsernames(options.nameAnonUsers ?? []);
   const fullAnonUsers = normalizeUsernames(options.fullAnonUsers ?? []);
-  const details = new Set(options.details ?? DEFAULT_DETAILS);
-  const bodyMaxLength = options.bodyMaxLength ?? DEFAULT_BODY_MAX_LENGTH;
+  const details = new Set(options.details ?? DEFAULT_ISSUE_DETAILS);
+  const bodyMaxLength =
+    options.bodyMaxLength ?? DEFAULT_ACTIVITY_BODY_MAX_LENGTH;
   const highlightFirstTimeContributors =
     options.highlightFirstTimeContributors ?? true;
   const issue = payload.issue;
