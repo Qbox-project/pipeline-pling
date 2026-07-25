@@ -11,7 +11,10 @@ import {
   resolveRepositoryName,
   sanitizeBody,
 } from './activity.js';
-import { matchBranchPattern } from './color.js';
+import {
+  matchBranchPattern,
+  resolvePrioritizedLabelColor,
+} from './color.js';
 import {
   escapeDiscordMarkdown,
   formatInlineCode,
@@ -175,6 +178,24 @@ export function getPullRequestColor(payload: PullRequestPayload): number {
   }
 
   return PR_COLORS.active;
+}
+
+export function getPullRequestColorKey(payload: PullRequestPayload): string {
+  if (payload.action === 'closed') {
+    return payload.pull_request.merged
+      ? 'pull-request.merged'
+      : 'pull-request.closed';
+  }
+
+  if (payload.pull_request.draft || payload.action === 'converted_to_draft') {
+    return 'pull-request.draft';
+  }
+
+  if (payload.action === 'ready_for_review') {
+    return 'pull-request.ready';
+  }
+
+  return `pull-request.${payload.action}`;
 }
 
 function buildMetadata(
@@ -356,6 +377,13 @@ export function buildPullRequestMessage(
     }
   }
 
+  const labelColor = resolvePrioritizedLabelColor(
+    pullRequest.labels,
+    options.labelColorPriority ?? [],
+  );
+  const eventColors = options.eventColors ?? {};
+  const eventColor =
+    eventColors[getPullRequestColorKey(payload)] ?? eventColors['pull-request'];
   const message: DiscordComponentsMessage = {
     flags: IS_COMPONENTS_V2,
     allowed_mentions: { parse: [] },
@@ -363,7 +391,10 @@ export function buildPullRequestMessage(
       {
         type: 17,
         accent_color:
-          options.accentColor ?? getPullRequestColor(payload),
+          labelColor ??
+          eventColor ??
+          options.accentColor ??
+          getPullRequestColor(payload),
         components,
       },
     ],

@@ -155,6 +155,22 @@ describe('buildIssueMessage', () => {
     expect(text).toContain('**Resolution:** not planned');
   });
 
+  it('resolves label and event color overrides before accent color', () => {
+    const labelMessage = buildIssueMessage(makePayload(), {
+      labelColorPriority: ['bug'],
+      eventColors: { 'issue.opened': 0x111111 },
+      accentColor: 0x222222,
+    });
+    expect(labelMessage.components[0].accent_color).toBe(0xd73a4a);
+
+    const eventMessage = buildIssueMessage(makePayload(), {
+      labelColorPriority: ['missing'],
+      eventColors: { issue: 0x111111 },
+      accentColor: 0x222222,
+    });
+    expect(eventMessage.components[0].accent_color).toBe(0x111111);
+  });
+
   it('supports compact, link-free cards', () => {
     const message = buildIssueMessage(makePayload(), {
       compactMode: true,

@@ -1,7 +1,12 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
-import { parseBranchColors, parseHexColor, resolveAccentColor } from './color.js';
+import {
+  parseBranchColors,
+  parseEventColors,
+  parseHexColor,
+  resolveAccentColor,
+} from './color.js';
 import { sendDiscordWebhook } from './discord.js';
 import {
   buildIssueMessage,
@@ -268,6 +273,12 @@ async function runPullRequest(
     sizeThresholds: parsePullRequestSizeThresholds(
       core.getInput('pull-request-size-thresholds'),
     ),
+    eventColors: parseEventColors(core.getInput('event-colors'), (message) =>
+      core.warning(message),
+    ),
+    labelColorPriority: parseActionList(
+      core.getInput('label-color-priority'),
+    ),
   });
 
   core.info(
@@ -317,6 +328,12 @@ async function runIssue(
     ),
     highlightFirstTimeContributors: core.getBooleanInput(
       'highlight-first-time-contributors',
+    ),
+    eventColors: parseEventColors(core.getInput('event-colors'), (message) =>
+      core.warning(message),
+    ),
+    labelColorPriority: parseActionList(
+      core.getInput('label-color-priority'),
     ),
   });
 

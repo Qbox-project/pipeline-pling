@@ -4,7 +4,9 @@ import {
   colorFromRepoName,
   matchBranchPattern,
   parseBranchColors,
+  parseEventColors,
   parseHexColor,
+  resolvePrioritizedLabelColor,
   resolveAccentColor,
 } from '../color.js';
 import { ACCENT_COLOR } from '../types.js';
@@ -76,6 +78,53 @@ develop=#ef4444`),
   it('returns an empty list for blank input', () => {
     expect(parseBranchColors('')).toEqual([]);
     expect(parseBranchColors('  \n ,  ')).toEqual([]);
+  });
+});
+
+describe('parseEventColors', () => {
+  it('parses supported event and state color overrides', () => {
+    expect(
+      parseEventColors(
+        'pull-request.merged=#8250df, issue.opened=1f883d\npull-request=#abcdef',
+      ),
+    ).toEqual({
+      'pull-request.merged': 0x8250df,
+      'issue.opened': 0x1f883d,
+      'pull-request': 0xabcdef,
+    });
+  });
+
+  it('warns and skips malformed, unknown, and invalid entries', () => {
+    const onWarning = vi.fn();
+    expect(
+      parseEventColors(
+        'broken,release.opened=#123456,issue.closed=nope,issue.opened=#123456',
+        onWarning,
+      ),
+    ).toEqual({ 'issue.opened': 0x123456 });
+    expect(onWarning).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('resolvePrioritizedLabelColor', () => {
+  it('uses the first matching priority label case-insensitively', () => {
+    const labels = [
+      { name: 'bug', color: 'd73a4a' },
+      { name: 'Security', color: 'b60205' },
+    ];
+
+    expect(resolvePrioritizedLabelColor(labels, ['security', 'bug'])).toBe(
+      0xb60205,
+    );
+  });
+
+  it('ignores missing and invalid label colors', () => {
+    expect(
+      resolvePrioritizedLabelColor(
+        [{ name: 'bug', color: 'invalid' }],
+        ['security', 'bug'],
+      ),
+    ).toBeUndefined();
   });
 });
 

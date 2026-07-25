@@ -222,6 +222,22 @@ describe('buildPullRequestMessage', () => {
     expect(message.components[0].accent_color).toBe(0x123456);
   });
 
+  it('resolves label, event, accent, and semantic colors in order', () => {
+    const labelMessage = buildPullRequestMessage(makePayload(), {
+      labelColorPriority: ['discord', 'enhancement'],
+      eventColors: { 'pull-request.opened': 0x111111 },
+      accentColor: 0x222222,
+    });
+    expect(labelMessage.components[0].accent_color).toBe(0x5865f2);
+
+    const eventMessage = buildPullRequestMessage(makePayload(), {
+      labelColorPriority: ['missing'],
+      eventColors: { 'pull-request.opened': 0x111111 },
+      accentColor: 0x222222,
+    });
+    expect(eventMessage.components[0].accent_color).toBe(0x111111);
+  });
+
   it('supports compact and link-free cards', () => {
     const message = buildPullRequestMessage(makePayload(), {
       compactMode: true,

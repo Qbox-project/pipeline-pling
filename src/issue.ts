@@ -11,6 +11,7 @@ import {
   resolveRepositoryName,
   sanitizeBody,
 } from './activity.js';
+import { resolvePrioritizedLabelColor } from './color.js';
 import {
   escapeDiscordMarkdown,
   formatInlineCode,
@@ -81,6 +82,10 @@ export function getIssueColor(payload: IssuesPayload): number {
   return payload.action === 'closed' || payload.issue.state === 'closed'
     ? ISSUE_COLORS.closed
     : ISSUE_COLORS.open;
+}
+
+export function getIssueColorKey(payload: IssuesPayload): string {
+  return `issue.${payload.action}`;
 }
 
 function buildMetadata(
@@ -239,13 +244,21 @@ export function buildIssueMessage(
     }
   }
 
+  const labelColor = resolvePrioritizedLabelColor(
+    issue.labels,
+    options.labelColorPriority ?? [],
+  );
+  const eventColors = options.eventColors ?? {};
+  const eventColor =
+    eventColors[getIssueColorKey(payload)] ?? eventColors.issue;
   const message: DiscordComponentsMessage = {
     flags: IS_COMPONENTS_V2,
     allowed_mentions: { parse: [] },
     components: [
       {
         type: 17,
-        accent_color: options.accentColor ?? getIssueColor(payload),
+        accent_color:
+          labelColor ?? eventColor ?? options.accentColor ?? getIssueColor(payload),
         components,
       },
     ],

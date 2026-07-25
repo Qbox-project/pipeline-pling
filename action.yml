@@ -98,6 +98,12 @@ inputs:
     description: Highlight pull requests and issues from first-time contributors.
     required: false
     default: "true"
+  event-colors:
+    description: Per-state activity colors as event.action=#RRGGBB entries separated by commas or newlines.
+    required: false
+  label-color-priority:
+    description: Ordered labels whose GitHub color takes priority for pull request and issue cards.
+    required: false
   accent-color:
     description: Fallback Discord accent color as #RRGGBB or RRGGBB; branch-colors takes priority.
     required: false

@@ -5,6 +5,23 @@ export interface BranchColorRule {
   color: number;
 }
 
+export type EventColors = Record<string, number>;
+
+export const SUPPORTED_EVENT_COLOR_KEYS = new Set([
+  'pull-request',
+  'pull-request.opened',
+  'pull-request.reopened',
+  'pull-request.draft',
+  'pull-request.ready',
+  'pull-request.merged',
+  'pull-request.closed',
+  'pull-request.synchronize',
+  'issue',
+  'issue.opened',
+  'issue.reopened',
+  'issue.closed',
+]);
+
 export function parseHexColor(input: string): number | undefined {
   const trimmed = input.trim();
   if (!trimmed) {
@@ -17,6 +34,70 @@ export function parseHexColor(input: string): number | undefined {
   }
 
   return Number.parseInt(hex, 16);
+}
+
+export function parseEventColors(
+  input: string,
+  onWarning?: (message: string) => void,
+): EventColors {
+  const colors: EventColors = {};
+  if (!input.trim()) {
+    return colors;
+  }
+
+  for (const entry of input.split(/[,\n]/)) {
+    const trimmed = entry.trim();
+    if (!trimmed) {
+      continue;
+    }
+
+    const separatorIndex = trimmed.indexOf('=');
+    if (separatorIndex === -1) {
+      onWarning?.(`Invalid event-colors entry "${trimmed}"; expected key=#RRGGBB.`);
+      continue;
+    }
+
+    const key = trimmed.slice(0, separatorIndex).trim().toLowerCase();
+    const colorInput = trimmed.slice(separatorIndex + 1).trim();
+    if (!SUPPORTED_EVENT_COLOR_KEYS.has(key)) {
+      onWarning?.(`Unknown event-colors key "${key}"; skipping.`);
+      continue;
+    }
+
+    const color = parseHexColor(colorInput);
+    if (color === undefined) {
+      onWarning?.(
+        `Invalid hex color "${colorInput}" in event-colors entry "${trimmed}"; skipping.`,
+      );
+      continue;
+    }
+
+    colors[key] = color;
+  }
+
+  return colors;
+}
+
+export function resolvePrioritizedLabelColor(
+  labels: Array<{ name: string; color?: string }>,
+  priority: string[],
+): number | undefined {
+  for (const priorityLabel of priority) {
+    const label = labels.find(
+      (candidate) =>
+        candidate.name.toLowerCase() === priorityLabel.toLowerCase(),
+    );
+    if (!label?.color) {
+      continue;
+    }
+
+    const color = parseHexColor(label.color);
+    if (color !== undefined) {
+      return color;
+    }
+  }
+
+  return undefined;
 }
 
 export function parseBranchColors(

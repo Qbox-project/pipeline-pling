@@ -280,6 +280,8 @@ describe('run', () => {
         details: ['body', 'labels', 'reviewers', 'assignees', 'stats'],
         highlightFirstTimeContributors: true,
         sizeThresholds: [100, 500, 1000],
+        eventColors: {},
+        labelColorPriority: [],
       });
       expect(mocks.sendDiscordWebhook).toHaveBeenCalledWith({
         webhookUrl: WEBHOOK_URL,
@@ -393,6 +395,8 @@ describe('run', () => {
       bodyMaxLength: 320,
       details: ['body', 'type', 'labels', 'assignees', 'milestone'],
       highlightFirstTimeContributors: true,
+      eventColors: {},
+      labelColorPriority: [],
     });
     expect(mocks.sendDiscordWebhook).toHaveBeenCalledWith({
       webhookUrl: WEBHOOK_URL,
@@ -496,6 +500,29 @@ describe('run', () => {
         details: ['body', 'labels'],
         highlightFirstTimeContributors: false,
         sizeThresholds: [100, 500, 1000],
+      }),
+    );
+  });
+
+  it('passes validated event and label colors to activity rendering', async () => {
+    const payload = makeIssuePayload();
+    mocks.context.eventName = 'issues';
+    mocks.context.payload = payload;
+    setInputs({
+      'event-colors': 'issue.opened=#123456,unknown=#abcdef',
+      'label-color-priority': 'security, Bug',
+    });
+
+    await run();
+
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'Unknown event-colors key "unknown"; skipping.',
+    );
+    expect(mocks.buildIssueMessage).toHaveBeenCalledWith(
+      payload,
+      expect.objectContaining({
+        eventColors: { 'issue.opened': 0x123456 },
+        labelColorPriority: ['security', 'bug'],
       }),
     );
   });
