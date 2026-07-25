@@ -253,6 +253,24 @@ describe('run', () => {
     expect(mocks.sendDiscordWebhook).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['pull_request', 'Pull request'],
+    ['pull_request_target', 'Pull request'],
+    ['issues', 'Issue'],
+  ])('skips malformed %s payloads safely', async (eventName, label) => {
+    mocks.context.eventName = eventName;
+    mocks.context.payload = { action: 'opened' };
+
+    await run();
+
+    expect(mocks.warning).toHaveBeenCalledWith(
+      `${label} event payload is missing required fields; skipping.`,
+    );
+    expect(mocks.buildPullRequestMessage).not.toHaveBeenCalled();
+    expect(mocks.buildIssueMessage).not.toHaveBeenCalled();
+    expect(mocks.sendDiscordWebhook).not.toHaveBeenCalled();
+  });
+
   it.each(['pull_request', 'pull_request_target'])(
     'renders and sends supported %s lifecycle events',
     async (eventName) => {
