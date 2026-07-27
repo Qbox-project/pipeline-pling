@@ -1168,6 +1168,12 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
 });
 
 describe('shouldSkipPush', () => {
+  it('skips pushes to non-branch refs', () => {
+    expect(
+      shouldSkipPush(makePayload({ ref: 'refs/tags/v1.0.0' }), true),
+    ).toBe('Push ref "refs/tags/v1.0.0" is not a branch; skipping.');
+  });
+
   it('skips empty pushes', () => {
     expect(shouldSkipPush(makePayload({ commits: [] }), true)).toMatch(/No commits/);
   });

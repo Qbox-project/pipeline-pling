@@ -697,6 +697,10 @@ export function shouldSkipPush(
   skipBots: boolean,
   options: ShouldSkipPushOptions = {},
 ): string | undefined {
+  if (!payload.ref.startsWith('refs/heads/')) {
+    return `Push ref "${payload.ref}" is not a branch; skipping.`;
+  }
+
   if (!payload.commits || payload.commits.length === 0) {
     return 'No commits in push payload; skipping.';
   }
