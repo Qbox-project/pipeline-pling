@@ -4,6 +4,7 @@ import { enforceActivityTextBudget } from '../activity.js';
 import {
   buildIssueMessage,
   getIssueColor,
+  getIssueColorKey,
   shouldSkipIssue,
 } from '../issue.js';
 import { ANONYMOUS_AVATAR_URL } from '../types.js';
@@ -165,9 +166,41 @@ describe('buildIssueMessage', () => {
     const message = buildIssueMessage(payload);
     const text = textContents(message).join('\n');
 
-    expect(getIssueColor(payload)).toBe(0x8250df);
+    expect(getIssueColor(payload)).toBe(0x6e7681);
+    expect(getIssueColorKey(payload)).toBe('issue.not_planned');
+    expect(message.components[0].accent_color).toBe(0x6e7681);
     expect(text).toContain('closed issue');
     expect(text).toContain('**Resolution:** not planned');
+  });
+
+  it('uses purple for issues closed as completed', () => {
+    const payload = makePayload({
+      action: 'closed',
+      issue: {
+        ...makePayload().issue,
+        state: 'closed',
+        state_reason: 'completed',
+      },
+    });
+
+    expect(getIssueColor(payload)).toBe(0x8250df);
+    expect(getIssueColorKey(payload)).toBe('issue.closed');
+  });
+
+  it('falls back from issue.not_planned event color to issue.closed', () => {
+    const payload = makePayload({
+      action: 'closed',
+      issue: {
+        ...makePayload().issue,
+        state: 'closed',
+        state_reason: 'not_planned',
+      },
+    });
+    const message = buildIssueMessage(payload, {
+      eventColors: { 'issue.closed': 0xabcdef },
+    });
+
+    expect(message.components[0].accent_color).toBe(0xabcdef);
   });
 
   it('resolves label and event color overrides before accent color', () => {

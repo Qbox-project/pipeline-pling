@@ -47,6 +47,7 @@ export const SUPPORTED_ISSUE_DETAILS = [...DEFAULT_ISSUE_DETAILS] as const;
 const ISSUE_COLORS = {
   open: 0x1f883d,
   closed: 0x8250df,
+  not_planned: 0x6e7681,
 } as const;
 
 export function shouldSkipIssue(
@@ -82,12 +83,23 @@ export interface IssueFilterOptions {
 }
 
 export function getIssueColor(payload: IssuesPayload): number {
-  return payload.action === 'closed' || payload.issue.state === 'closed'
-    ? ISSUE_COLORS.closed
-    : ISSUE_COLORS.open;
+  if (payload.action === 'closed' || payload.issue.state === 'closed') {
+    return payload.issue.state_reason === 'not_planned'
+      ? ISSUE_COLORS.not_planned
+      : ISSUE_COLORS.closed;
+  }
+
+  return ISSUE_COLORS.open;
 }
 
 export function getIssueColorKey(payload: IssuesPayload): string {
+  if (
+    (payload.action === 'closed' || payload.issue.state === 'closed') &&
+    payload.issue.state_reason === 'not_planned'
+  ) {
+    return 'issue.not_planned';
+  }
+
   return `issue.${payload.action}`;
 }
 
@@ -259,8 +271,11 @@ export function buildIssueMessage(
       );
   enforceActivityTextBudget(components);
   const eventColors = options.eventColors ?? {};
+  const colorKey = getIssueColorKey(payload);
   const eventColor =
-    eventColors[getIssueColorKey(payload)] ?? eventColors.issue;
+    eventColors[colorKey] ??
+    (colorKey === 'issue.not_planned' ? eventColors['issue.closed'] : undefined) ??
+    eventColors.issue;
   const message: DiscordComponentsMessage = {
     flags: IS_COMPONENTS_V2,
     allowed_mentions: { parse: [] },

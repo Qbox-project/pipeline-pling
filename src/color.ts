@@ -20,6 +20,7 @@ export const SUPPORTED_EVENT_COLOR_KEYS = new Set([
   'issue.opened',
   'issue.reopened',
   'issue.closed',
+  'issue.not_planned',
 ]);
 
 export function parseHexColor(input: string): number | undefined {

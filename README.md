@@ -118,7 +118,7 @@ PR branch patterns are case-sensitive. `*` matches one path segment and `**` mat
 
 Branch color patterns are case-sensitive. `*` matches one path segment, while `**` can match across segments. A matching `branch-colors` rule takes priority over `accent-color`.
 
-For PRs and issues, color precedence is: first matching `label-color-priority` label, the most specific `event-colors` key, `accent-color`, then the semantic default. Supported keys are `pull-request`, `pull-request.opened`, `pull-request.reopened`, `pull-request.draft`, `pull-request.ready`, `pull-request.merged`, `pull-request.closed`, `pull-request.synchronize`, `issue`, `issue.opened`, `issue.reopened`, and `issue.closed`.
+For PRs and issues, color precedence is: first matching `label-color-priority` label, the most specific `event-colors` key, `accent-color`, then the semantic default. Supported keys are `pull-request`, `pull-request.opened`, `pull-request.reopened`, `pull-request.draft`, `pull-request.ready`, `pull-request.merged`, `pull-request.closed`, `pull-request.synchronize`, `issue`, `issue.opened`, `issue.reopened`, `issue.closed`, and `issue.not_planned`. Issues closed as not planned default to grey (`#6e7681`).
 
 ### Privacy
 
