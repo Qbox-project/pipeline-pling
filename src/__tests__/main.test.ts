@@ -658,4 +658,53 @@ describe('run', () => {
     const [, options] = mocks.buildDiscordMessage.mock.calls[0];
     expect(options.accentColor).toEqual(expect.any(Number));
   });
+
+  it('warns and falls back to defaults for invalid boolean inputs', async () => {
+    setInputs({
+      'skip-bots': 'maybe',
+      'use-sender-avatar': 'yes',
+      'use-repo-username': '1',
+      'hide-links': 'nope',
+      'compact-mode': 'on',
+      'highlight-first-time-contributors': 'nah',
+    });
+    mocks.getBooleanInput.mockImplementation((name) => {
+      throw new Error(`Input does not meet YAML 1.2 "Core Schema" specification: ${name}`);
+    });
+
+    mocks.context.eventName = 'issues';
+    mocks.context.payload = makeIssuePayload();
+
+    await run();
+
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'Invalid skip-bots value "maybe"; defaulting to true.',
+    );
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'Invalid use-sender-avatar value "yes"; defaulting to true.',
+    );
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'Invalid use-repo-username value "1"; defaulting to true.',
+    );
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'Invalid hide-links value "nope"; defaulting to false.',
+    );
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'Invalid compact-mode value "on"; defaulting to false.',
+    );
+    expect(mocks.warning).toHaveBeenCalledWith(
+      'Invalid highlight-first-time-contributors value "nah"; defaulting to true.',
+    );
+    expect(mocks.buildIssueMessage).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        useSenderAvatar: true,
+        useRepoUsername: true,
+        hideLinks: false,
+        compactMode: false,
+        highlightFirstTimeContributors: true,
+      }),
+    );
+    expect(mocks.sendDiscordWebhook).toHaveBeenCalledOnce();
+  });
 });

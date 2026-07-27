@@ -201,16 +201,28 @@ interface SharedInputs {
   accentColor?: number;
 }
 
+function getBooleanInputOrDefault(name: string, defaultValue: boolean): boolean {
+  try {
+    return core.getBooleanInput(name);
+  } catch {
+    const received = core.getInput(name);
+    core.warning(
+      `Invalid ${name} value "${received}"; defaulting to ${defaultValue}.`,
+    );
+    return defaultValue;
+  }
+}
+
 function readSharedInputs(eventName: string): SharedInputs {
   return {
-    skipBots: core.getBooleanInput('skip-bots'),
+    skipBots: getBooleanInputOrDefault('skip-bots', true),
     webhookUrl: core.getInput('webhook-url', { required: true }),
     threadId: core.getInput('thread-id') || undefined,
-    useSenderAvatar: core.getBooleanInput('use-sender-avatar'),
-    useRepoUsername: core.getBooleanInput('use-repo-username'),
+    useSenderAvatar: getBooleanInputOrDefault('use-sender-avatar', true),
+    useRepoUsername: getBooleanInputOrDefault('use-repo-username', true),
     repoName: core.getInput('repo-name') || undefined,
-    hideLinks: core.getBooleanInput('hide-links'),
-    compactMode: core.getBooleanInput('compact-mode'),
+    hideLinks: getBooleanInputOrDefault('hide-links', false),
+    compactMode: getBooleanInputOrDefault('compact-mode', false),
     nameAnonUsers: parseUsernameList(core.getInput('name-anon-users')),
     fullAnonUsers: parseUsernameList(core.getInput('full-anon-users')),
     accentColor: parseAccentColor(eventName),
@@ -268,8 +280,9 @@ async function runPullRequest(
       SUPPORTED_PULL_REQUEST_DETAILS,
       'pull-request-details',
     ),
-    highlightFirstTimeContributors: core.getBooleanInput(
+    highlightFirstTimeContributors: getBooleanInputOrDefault(
       'highlight-first-time-contributors',
+      true,
     ),
     sizeThresholds: parsePullRequestSizeThresholds(
       core.getInput('pull-request-size-thresholds'),
@@ -328,8 +341,9 @@ async function runIssue(
       SUPPORTED_ISSUE_DETAILS,
       'issue-details',
     ),
-    highlightFirstTimeContributors: core.getBooleanInput(
+    highlightFirstTimeContributors: getBooleanInputOrDefault(
       'highlight-first-time-contributors',
+      true,
     ),
     eventColors: parseEventColors(core.getInput('event-colors'), (message) =>
       core.warning(message),
