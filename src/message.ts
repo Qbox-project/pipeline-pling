@@ -12,6 +12,7 @@ import {
   formatMarkdownLink,
   truncate,
 } from './format.js';
+import { sanitizeWebhookUsername } from './activity.js';
 import {
   ANONYMOUS_AVATAR_URL,
   IS_COMPONENTS_V2,
@@ -661,7 +662,12 @@ export function buildDiscordMessage(
   };
 
   if (useRepoUsername) {
-    message.username = getRepositoryName(payload, repoNameOverride);
+    const username = sanitizeWebhookUsername(
+      getRepositoryName(payload, repoNameOverride),
+    );
+    if (username !== undefined) {
+      message.username = username;
+    }
   }
 
   if (useSenderAvatar) {

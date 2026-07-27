@@ -197,6 +197,20 @@ describe('buildPullRequestMessage', () => {
     ]);
   });
 
+  it('omits webhook usernames Discord rejects', () => {
+    const message = buildPullRequestMessage(
+      makePayload({
+        repository: {
+          name: 'Clyde-Tools',
+          full_name: 'Qbox-project/Clyde-Tools',
+          html_url: 'https://github.com/Qbox-project/Clyde-Tools',
+        },
+      }),
+    );
+
+    expect(message.username).toBeUndefined();
+  });
+
   it('uses semantic colors for draft, merged, and unmerged closed states', () => {
     const draft = makePayload({
       pull_request: { ...makePayload().pull_request, draft: true },

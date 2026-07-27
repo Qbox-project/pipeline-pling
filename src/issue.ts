@@ -12,6 +12,7 @@ import {
   resolveActivityAvatar,
   resolveRepositoryName,
   sanitizeBody,
+  sanitizeWebhookUsername,
 } from './activity.js';
 import { resolvePrioritizedLabelColor } from './color.js';
 import {
@@ -274,7 +275,12 @@ export function buildIssueMessage(
   };
 
   if (useRepoUsername) {
-    message.username = resolveRepositoryName(payload, options.repoName);
+    const username = sanitizeWebhookUsername(
+      resolveRepositoryName(payload, options.repoName),
+    );
+    if (username !== undefined) {
+      message.username = username;
+    }
   }
 
   if (useSenderAvatar) {

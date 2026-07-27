@@ -139,6 +139,20 @@ describe('buildIssueMessage', () => {
     ]);
   });
 
+  it('omits webhook usernames Discord rejects', () => {
+    const message = buildIssueMessage(
+      makePayload({
+        repository: {
+          name: 'tools-for-clyde',
+          full_name: 'Qbox-project/tools-for-clyde',
+          html_url: 'https://github.com/Qbox-project/tools-for-clyde',
+        },
+      }),
+    );
+
+    expect(message.username).toBeUndefined();
+  });
+
   it('renders closed resolution and semantic color', () => {
     const payload = makePayload({
       action: 'closed',

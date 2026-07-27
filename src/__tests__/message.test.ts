@@ -856,6 +856,34 @@ Co-authored-by: Jane Doe <123456+janedoe@users.noreply.github.com>`,
     expect(message.username).toBeUndefined();
   });
 
+  it('omits webhook usernames Discord rejects', () => {
+    const message = buildDiscordMessage(
+      makePayload({
+        repository: {
+          name: 'clyde-tools',
+          full_name: 'Qbox-project/clyde-tools',
+          html_url: 'https://github.com/Qbox-project/clyde-tools',
+        },
+      }),
+    );
+
+    expect(message.username).toBeUndefined();
+  });
+
+  it('allows Discord-named repositories as webhook usernames', () => {
+    const message = buildDiscordMessage(
+      makePayload({
+        repository: {
+          name: 'discord-bot',
+          full_name: 'Qbox-project/discord-bot',
+          html_url: 'https://github.com/Qbox-project/discord-bot',
+        },
+      }),
+    );
+
+    expect(message.username).toBe('discord-bot');
+  });
+
   it('uses repo-name override for webhook username and header repository label', () => {
     const message = buildDiscordMessage(makePayload(), {
       repoName: 'My Project',

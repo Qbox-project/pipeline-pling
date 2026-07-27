@@ -114,6 +114,19 @@ export function resolveRepositoryName(
   return truncate(name, REPOSITORY_NAME_MAX_LENGTH);
 }
 
+// Discord rejects webhook usernames containing "clyde". Docs also list
+// "discord", but that is not enforced for webhooks — do not reject it.
+export function sanitizeWebhookUsername(
+  name: string,
+): string | undefined {
+  const trimmed = name.trim();
+  if (!trimmed || /clyde/i.test(trimmed)) {
+    return undefined;
+  }
+
+  return trimmed;
+}
+
 function withAvatarSize(avatarUrl: string): string {
   try {
     const url = new URL(avatarUrl);

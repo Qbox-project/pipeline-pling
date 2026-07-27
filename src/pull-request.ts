@@ -12,6 +12,7 @@ import {
   resolveActivityAvatar,
   resolveRepositoryName,
   sanitizeBody,
+  sanitizeWebhookUsername,
 } from './activity.js';
 import {
   matchBranchPattern,
@@ -411,7 +412,12 @@ export function buildPullRequestMessage(
   };
 
   if (useRepoUsername) {
-    message.username = resolveRepositoryName(payload, options.repoName);
+    const username = sanitizeWebhookUsername(
+      resolveRepositoryName(payload, options.repoName),
+    );
+    if (username !== undefined) {
+      message.username = username;
+    }
   }
 
   if (useSenderAvatar) {
