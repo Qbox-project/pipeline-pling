@@ -1,42 +1,43 @@
 {
   "action": "opened",
   "issue": {
-    "number": 51,
-    "html_url": "https://github.com/Qbox-project/pipeline-pling/issues/51",
-    "title": "Support issue notifications",
-    "body": "Show issue lifecycle updates in Discord.",
+    "number": 762,
+    "html_url": "https://github.com/Qbox-project/qbx_core/issues/762",
+    "title": "Incorrect SQL query usage in player storage",
+    "body": "### Summary\n\nUnaesthetic SQL query implementation with \"ON DUPLICATE KEY UPDATE\"\n\n### Reproduction\n\nIf you dont have a second account on hand:\n1. Setup Server & DB from fresh, ex. txAdmin QBox template\n2. Join server\n3. Check players table in DB, id for player is 1 which is expected\n4. Wait/play a bit, so playerdata will be saved\n5. Disconnect & delete row in players table\n6. Join server again\n7. Check players table in DB, id for player is not 2, which is unexpected. In my case it was 36.\n\n### Expected behavior\n\nStep 6/7 should result in id = 2\n\n### Actual behavior\n\nStep 6/7 results in incorrect increasement of AUTO_INCREMENT colum\n\n### Additional context\n\nProblem is /server/storage/players.lua:107\n```lua\n    MySQL.insert.await('INSERT INTO players (userId, citizenid, cid, license, name, money, charinfo, job, gang, position, metadata, last_logged_out) VALUES (:userId, :citizenid, :cid, :license, :name, :money, :charinfo, :job, :gang, :position, :metadata, :last_logged_out) ON DUPLICATE KEY UPDATE userId = :userId, name = :name, money = :money, charinfo = :charinfo, job = :job, gang = :gang, position = :position, metadata = :metadata, last_logged_out = :last_logged_out', {\n```\n\nAs MySQL documention states / https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html\nin spirit: INSERT ... ON DUPLICATE KEY UPDATE increases the auto-increment value.\n\nHere is a simple explanation. MySQL attempts to do the insert first. This is when the id gets auto incremented. Once incremented, it stays. Then the duplicate is detected and the update happens. \n\nSo you should not use an \"INSERT ... ON DUPLICATE KEY UPDATE\" if the table has a column with AUTO_INCREMENT.\n\nSolution would require a pre check, if the userId+citizenid already exists, then update else insert new.\nex.\n```lua\nlocal check = MySQL.single.await('SELECT COUNT(`id`) AS CD FROM `players` WHERE `userId` = ? AND `citizenid` = ?', {request.playerEntity.userId, request.playerEntity.citizenId})\nif not check or not check.CD or check.CD == 0 then\n-- insert\nelse\n-- update\nend\n```\n\nStay curious, and keep your queries optimized. Thank you for reading.\n\n### Current Version\n\n1.23.0\n\n### Custom Resources\n\njust  txAdmin QBox template",
     "state": "open",
     "state_reason": null,
     "user": {
-      "login": "reporter",
+      "login": "thecrafterjt",
       "type": "User",
-      "avatar_url": "https://avatars.githubusercontent.com/u/54321?v=4",
-      "html_url": "https://github.com/reporter"
+      "avatar_url": "https://avatars.githubusercontent.com/u/20760395?v=4",
+      "html_url": "https://github.com/thecrafterjt"
     },
-    "author_association": "FIRST_TIMER",
+    "author_association": "NONE",
     "labels": [
-      { "name": "enhancement", "color": "a2eeef" }
+      {
+        "name": "bug",
+        "color": "d73a4a"
+      },
+      {
+        "name": "need repro",
+        "color": "17827D"
+      }
     ],
     "assignees": [],
-    "milestone": {
-      "title": "v1.5.0",
-      "html_url": "https://github.com/Qbox-project/pipeline-pling/milestone/2"
-    },
-    "type": {
-      "name": "Feature",
-      "color": "blue"
-    },
+    "milestone": null,
+    "type": null,
     "comments": 0
   },
   "repository": {
-    "name": "pipeline-pling",
-    "full_name": "Qbox-project/pipeline-pling",
-    "html_url": "https://github.com/Qbox-project/pipeline-pling"
+    "name": "qbx_core",
+    "full_name": "Qbox-project/qbx_core",
+    "html_url": "https://github.com/Qbox-project/qbx_core"
   },
   "sender": {
-    "login": "reporter",
+    "login": "thecrafterjt",
     "type": "User",
-    "avatar_url": "https://avatars.githubusercontent.com/u/54321?v=4",
-    "html_url": "https://github.com/reporter"
+    "avatar_url": "https://avatars.githubusercontent.com/u/20760395?v=4",
+    "html_url": "https://github.com/thecrafterjt"
   }
 }

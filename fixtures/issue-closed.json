@@ -1,39 +1,43 @@
 {
   "action": "closed",
   "issue": {
-    "number": 51,
-    "html_url": "https://github.com/Qbox-project/pipeline-pling/issues/51",
-    "title": "Support issue notifications",
-    "body": "Show issue lifecycle updates in Discord.",
+    "number": 743,
+    "html_url": "https://github.com/Qbox-project/qbx_core/issues/743",
+    "title": "Hardcoded values in client.lua should be configurable",
+    "body": "### Summary\n\nSeveral magic numbers are hardcoded directly in `client.lua`, making it difficult to tune behavior without modifying the source file. These values should be exposed through a central config.\n\n### Reproduction\n\n1. Open `client/client.lua`\n2. Search for literal numbers such as `650`, `950.0`, `850.0`, `-25.0`, `50.0`, `1000`, `5000`, `25`, `5`, `50`\n3. Notice they are scattered across multiple event handlers with no single place to change them\n4. Any tuning (e.g. adjusting fade duration or teleport Z-search range) requires editing core source code directly\n\n### Expected behavior\n\n`All tuneable constants should be defined in a <code>config.lua</code> so server owners and contributors can adjust values without touching core logic.\n\n<table>\n  <thead>\n    <tr>\n      <th>Constant</th>\n      <th>Current Value</th>\n      <th>Location</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr><td>Screen fade duration</td><td><code>650</code> ms</td><td><code>GoToMarker</code></td></tr>\n    <tr><td>Z search start</td><td><code>950.0</code></td><td><code>GoToMarker</code></td></tr>\n    <tr><td>Z search step</td><td><code>-25.0</code></td><td><code>GoToMarker</code></td></tr>\n    <tr><td>Scene load radius</td><td><code>50.0</code></td><td><code>GoToMarker</code></td></tr>\n    <tr><td>Collision timeout</td><td><code>1000</code> ms</td><td><code>GoToMarker</code></td></tr>\n    <tr><td>/me display duration</td><td><code>5000</code> ms</td><td>me state bag handler</td></tr>\n    <tr><td>/me max distance</td><td><code>25</code> units</td><td>me state bag handler</td></tr>\n    <tr><td>Default vehicle radius</td><td><code>5</code> units</td><td><code>getVehiclesInRadius</code></td></tr>\n    <tr><td>setVehicleProperties timeout</td><td><code>1000</code> ms</td><td><code>setVehicleProperties</code></td></tr>\n    <tr><td>setVehicleProperties wait tick</td><td><code>50</code> ms</td><td><code>setVehicleProperties</code></td></tr>\n    <tr><td>Seat indices for clear peds</td><td><code>{-1, 0}</code></td><td><code>initVehicle</code> handler</td></tr>\n  </tbody>\n</table>`\n\n### Actual behavior\n\nAll tuneable constants are hardcoded directly in client.lua, making it impossible to adjust behavior without modifying core source code directly\n\n### Additional context\n\n_No response_\n\n### Current Version\n\nv1.3.0\n\n### Custom Resources\n\nnone",
     "state": "closed",
     "state_reason": "completed",
     "user": {
-      "login": "reporter",
+      "login": "kibieptr",
       "type": "User",
-      "avatar_url": "https://avatars.githubusercontent.com/u/54321?v=4",
-      "html_url": "https://github.com/reporter"
+      "avatar_url": "https://avatars.githubusercontent.com/u/138297239?v=4",
+      "html_url": "https://github.com/kibieptr"
     },
     "author_association": "NONE",
     "labels": [
-      { "name": "enhancement", "color": "a2eeef" }
+      {
+        "name": "bug",
+        "color": "d73a4a"
+      },
+      {
+        "name": "need repro",
+        "color": "17827D"
+      }
     ],
     "assignees": [],
     "milestone": null,
-    "type": {
-      "name": "Feature",
-      "color": "blue"
-    },
-    "comments": 3
+    "type": null,
+    "comments": 0
   },
   "repository": {
-    "name": "pipeline-pling",
-    "full_name": "Qbox-project/pipeline-pling",
-    "html_url": "https://github.com/Qbox-project/pipeline-pling"
+    "name": "qbx_core",
+    "full_name": "Qbox-project/qbx_core",
+    "html_url": "https://github.com/Qbox-project/qbx_core"
   },
   "sender": {
-    "login": "maintainer",
+    "login": "ChatDisabled",
     "type": "User",
-    "avatar_url": "https://avatars.githubusercontent.com/u/67890?v=4",
-    "html_url": "https://github.com/maintainer"
+    "avatar_url": "https://avatars.githubusercontent.com/u/44729807?v=4",
+    "html_url": "https://github.com/ChatDisabled"
   }
 }

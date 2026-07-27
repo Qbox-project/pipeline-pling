@@ -1,49 +1,47 @@
 {
   "action": "opened",
-  "number": 42,
+  "number": 768,
   "pull_request": {
-    "number": 42,
-    "html_url": "https://github.com/Qbox-project/pipeline-pling/pull/42",
-    "title": "feat: add pull request notifications",
-    "body": "Show useful lifecycle updates in Discord.",
+    "number": 768,
+    "html_url": "https://github.com/Qbox-project/qbx_core/pull/768",
+    "title": "fix(groups): normalize numeric grade keys",
+    "body": "## Summary\n\n- convert QB-style numeric string grade keys (for example, `\"0\"`) to integer keys before caching jobs and gangs\n- reject negative, fractional, non-numeric, and colliding grade keys\n- apply the same normalization to job and gang grade upserts\n- validate gang collections before mutating the shared cache\n- acknowledge the two valid `qbx.math.isFinite` calls until the external `qbox_lib` Luacheck standard includes that helper\n\n## Why\n\nQbox grade lookups use numeric levels, while QB-compatible runtime group definitions can provide string keys. Those definitions were cached unchanged, so commands such as `setgang` could fail to find an otherwise valid grade.\n\nThe lint standard currently declares `qbx.math.round` but not `qbx.math.isFinite`, even though `isFinite` is implemented in `modules/lib.lua`. The narrow inline directives prevent those valid calls from failing every repository lint run without changing runtime behavior.\n\nCloses #543\n\n## Validation\n\n- `git diff --check origin/main...HEAD`\n- push and pull-request Lua lint workflows completed successfully\n- JUnit lint report: 55 passed, 0 failed\n- CodeQL completed successfully\n- confirmed the pushed branch SHA matches the reviewed local commit\n- reviewed all grade lookup and mutation call sites\n\nThe repository has no local test harness and no Lua runtime is installed in this workspace, so no package-based Lua checker was invoked.",
     "draft": false,
     "merged": false,
     "user": {
-      "login": "contributor",
+      "login": "pushkart2",
       "type": "User",
-      "avatar_url": "https://avatars.githubusercontent.com/u/12345?v=4",
-      "html_url": "https://github.com/contributor"
+      "avatar_url": "https://avatars.githubusercontent.com/u/10562121?v=4",
+      "html_url": "https://github.com/pushkart2"
     },
-    "author_association": "FIRST_TIME_CONTRIBUTOR",
+    "author_association": "MEMBER",
     "head": {
-      "ref": "feature/notifications",
-      "label": "contributor:feature/notifications"
+      "ref": "fix/normalize-group-grade-keys",
+      "label": "Qbox-project:fix/normalize-group-grade-keys"
     },
     "base": {
       "ref": "main",
       "label": "Qbox-project:main"
     },
-    "labels": [
-      { "name": "enhancement", "color": "a2eeef" }
-    ],
+    "labels": [],
     "assignees": [],
     "requested_reviewers": [],
     "requested_teams": [],
-    "additions": 120,
-    "deletions": 10,
-    "changed_files": 4,
+    "additions": 76,
+    "deletions": 4,
+    "changed_files": 2,
     "comments": 0,
-    "commits": 3
+    "commits": 2
   },
   "repository": {
-    "name": "pipeline-pling",
-    "full_name": "Qbox-project/pipeline-pling",
-    "html_url": "https://github.com/Qbox-project/pipeline-pling"
+    "name": "qbx_core",
+    "full_name": "Qbox-project/qbx_core",
+    "html_url": "https://github.com/Qbox-project/qbx_core"
   },
   "sender": {
-    "login": "contributor",
+    "login": "pushkart2",
     "type": "User",
-    "avatar_url": "https://avatars.githubusercontent.com/u/12345?v=4",
-    "html_url": "https://github.com/contributor"
+    "avatar_url": "https://avatars.githubusercontent.com/u/10562121?v=4",
+    "html_url": "https://github.com/pushkart2"
   }
 }

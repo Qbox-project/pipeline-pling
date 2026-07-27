@@ -1,0 +1,39 @@
+{
+  "action": "closed",
+  "issue": {
+    "number": 698,
+    "html_url": "https://github.com/Qbox-project/qbx_core/issues/698",
+    "title": "Player driving licences as a table.",
+    "body": "### The problem\n\nCurrently, there is not support for handling multiple types of driving licences. Since it's a bolean.\n\n### Ideal solution\n\nChanging the `licences.driver` type to table and editing all scripts handling it to use a table. Not hard to do.\n\n### Alternative solutions\n\n_No response_\n\n### Additional context\n\n_No response_",
+    "state": "closed",
+    "state_reason": "not_planned",
+    "user": {
+      "login": "sw4m",
+      "type": "User",
+      "avatar_url": "https://avatars.githubusercontent.com/u/56038988?v=4",
+      "html_url": "https://github.com/sw4m"
+    },
+    "author_association": "NONE",
+    "labels": [
+      {
+        "name": "enhancement",
+        "color": "a2eeef"
+      }
+    ],
+    "assignees": [],
+    "milestone": null,
+    "type": null,
+    "comments": 5
+  },
+  "repository": {
+    "name": "qbx_core",
+    "full_name": "Qbox-project/qbx_core",
+    "html_url": "https://github.com/Qbox-project/qbx_core"
+  },
+  "sender": {
+    "login": "t0r3tto",
+    "type": "User",
+    "avatar_url": "https://avatars.githubusercontent.com/u/170161138?v=4",
+    "html_url": "https://github.com/t0r3tto"
+  }
+}

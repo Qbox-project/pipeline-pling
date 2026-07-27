@@ -1,49 +1,54 @@
 {
   "action": "closed",
-  "number": 42,
+  "number": 765,
   "pull_request": {
-    "number": 42,
-    "html_url": "https://github.com/Qbox-project/pipeline-pling/pull/42",
-    "title": "feat: add pull request notifications",
-    "body": "Show useful lifecycle updates in Discord.",
+    "number": 765,
+    "html_url": "https://github.com/Qbox-project/qbx_core/pull/765",
+    "title": "refactor: extract shared helpers to reduce duplication",
+    "body": "## Description\r\n\r\nPure refactor, no behavior change. Repeated inline code is pulled into small typed helpers so the logic lives in one place. One commit per file.\r\n\r\n- `server/player.lua`: player lookup, offline lookup, save branch, cash-to-money map, exploit drop, and error-result helpers.\r\n- `server/groups.lua`: group update-notify and commit-to-file helpers.\r\n- `server/commands.lua`: opt-in guard, player-not-found guard, and OOC message helpers.\r\n- `server/functions.lua`: duty-count and bucket-pool helpers.\r\n- `client/character.lua`: shared spawn sequence helper.\r\n- `bridge/qb/server/functions.lua`: qb export registration helper.\r\n- `bridge/qb/client/functions.lua`: coords normalization helper.\r\n\r\n## Checklist\r\n\r\n- [ ] I have personally loaded this code into an updated Qbox project and checked all of its functionality.\r\n- [x] My pull request fits the contribution guidelines & code conventions.\r\n\r\n\r\n## Type of Change\r\n\r\n- [ ] Bug fix\r\n- [ ] New feature\r\n- [x] Refactor\r\n- [ ] Breaking change\r\n\r\n\r\n## Checklist\r\n\r\n- [ ] I tested this on a local Qbox server\r\n- [x] My PR title follows [Conventional Commits](https://www.conventionalcommits.org/)\r\n- [x] My changes follow the [contribution guidelines](https://github.com/Qbox-project/.github/blob/main/.github/contributing.md)\r\n- [ ] I fixed any lint issues reported by CI\r\n",
     "draft": false,
     "merged": true,
     "user": {
-      "login": "contributor",
+      "login": "Kenshiin13",
       "type": "User",
-      "avatar_url": "https://avatars.githubusercontent.com/u/12345?v=4",
-      "html_url": "https://github.com/contributor"
+      "avatar_url": "https://avatars.githubusercontent.com/u/63159154?v=4",
+      "html_url": "https://github.com/Kenshiin13"
     },
-    "author_association": "CONTRIBUTOR",
+    "author_association": "MEMBER",
     "head": {
-      "ref": "feature/notifications",
-      "label": "contributor:feature/notifications"
+      "ref": "refactor/server-dry-helpers",
+      "label": "Kenshiin13:refactor/server-dry-helpers"
     },
     "base": {
       "ref": "main",
       "label": "Qbox-project:main"
     },
-    "labels": [
-      { "name": "enhancement", "color": "a2eeef" }
-    ],
+    "labels": [],
     "assignees": [],
-    "requested_reviewers": [],
+    "requested_reviewers": [
+      {
+        "login": "ChatDisabled",
+        "type": "User",
+        "avatar_url": "https://avatars.githubusercontent.com/u/44729807?v=4",
+        "html_url": "https://github.com/ChatDisabled"
+      }
+    ],
     "requested_teams": [],
-    "additions": 120,
-    "deletions": 10,
-    "changed_files": 4,
-    "comments": 2,
-    "commits": 3
+    "additions": 258,
+    "deletions": 305,
+    "changed_files": 7,
+    "comments": 0,
+    "commits": 9
   },
   "repository": {
-    "name": "pipeline-pling",
-    "full_name": "Qbox-project/pipeline-pling",
-    "html_url": "https://github.com/Qbox-project/pipeline-pling"
+    "name": "qbx_core",
+    "full_name": "Qbox-project/qbx_core",
+    "html_url": "https://github.com/Qbox-project/qbx_core"
   },
   "sender": {
-    "login": "maintainer",
+    "login": "ChatDisabled",
     "type": "User",
-    "avatar_url": "https://avatars.githubusercontent.com/u/67890?v=4",
-    "html_url": "https://github.com/maintainer"
+    "avatar_url": "https://avatars.githubusercontent.com/u/44729807?v=4",
+    "html_url": "https://github.com/ChatDisabled"
   }
 }

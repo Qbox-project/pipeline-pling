@@ -10,6 +10,7 @@ describe('activity payload validation', () => {
     ['pull-request-merged.json', isPullRequestPayload],
     ['issue-opened.json', isIssuesPayload],
     ['issue-closed.json', isIssuesPayload],
+    ['issue-not-planned.json', isIssuesPayload],
     ['push.json', isPushPayload],
   ])('accepts the representative %s fixture', (filename, validator) => {
     const fixture = JSON.parse(

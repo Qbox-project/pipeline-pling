@@ -107,9 +107,16 @@ const scenarios = [
   },
   {
     label: "issue-closed",
-    description: "default inputs — closed issue card",
+    description: "default inputs — issue closed as completed",
     workflow: "discord-issue.yml",
     fixture: "issue-closed.json",
+    event: "issues",
+  },
+  {
+    label: "issue-not-planned",
+    description: "default inputs — issue closed as not planned (grey accent)",
+    workflow: "discord-issue.yml",
+    fixture: "issue-not-planned.json",
     event: "issues",
   },
 ];
