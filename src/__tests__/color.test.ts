@@ -149,6 +149,8 @@ describe('matchBranchPattern', () => {
   it('treats regex metacharacters literally', () => {
     expect(matchBranchPattern('release-1.0', 'release-1.0')).toBe(true);
     expect(matchBranchPattern('releaseX1X0', 'release.1.0')).toBe(false);
+    expect(matchBranchPattern('releas', 'release?')).toBe(false);
+    expect(matchBranchPattern('release?', 'release?')).toBe(true);
   });
 });
 

@@ -159,7 +159,7 @@ export function matchBranchPattern(branch: string, pattern: string): boolean {
       continue;
     }
 
-    if (/[$^()+.|\\[\]{}]/.test(character)) {
+    if (/[$^()+.|?\\[\]{}]/.test(character)) {
       regexSource += `\\${character}`;
       continue;
     }
