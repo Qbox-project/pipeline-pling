@@ -31,7 +31,7 @@ export function truncate(text: string, maxLength: number): string {
 export function escapeDiscordMarkdown(text: string): string {
   return text
     .replace(/\\/g, '\\\\')
-    .replace(/([`*_~|\[\]<>])/g, '\\$1')
+    .replace(/([`*_~|[\]<>])/g, '\\$1')
     .replace(/^([#>-])/gm, '\\$1')
     .replace(/^(\d+)\./gm, '$1\\.');
 }

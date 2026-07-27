@@ -7,15 +7,20 @@
   "scripts": {
     "build": "esbuild src/main.ts --bundle --platform=node --target=node24 --outfile=dist/index.js --format=cjs --minify",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run typecheck && npm run test && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build",
     "act:test": "node scripts/act-test.mjs"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^24.13.3",
     "esbuild": "^0.25.5",
+    "eslint": "^10.8.0",
+    "globals": "^17.8.0",
     "typescript": "^5.8.3",
+    "typescript-eslint": "^8.65.0",
     "vitest": "^3.2.4"
   },
   "dependencies": {
