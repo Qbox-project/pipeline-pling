@@ -270,6 +270,10 @@ export function isCommitFullyAnonymous(
     return true;
   }
 
+  if (commit.committer && isUserInAnonList(commit.committer, fullAnonUsers)) {
+    return true;
+  }
+
   return parseCoAuthors(commit.message).some((coAuthor) =>
     isUserInAnonList(
       {

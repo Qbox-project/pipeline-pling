@@ -420,6 +420,27 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
       ),
     ).toBe(true);
   });
+
+  it('treats full-anon committers as fully anonymous', () => {
+    expect(
+      isCommitFullyAnonymous(
+        makeCommit({
+          author: {
+            name: 'Whereiam',
+            email: '84282589+WhereiamL@users.noreply.github.com',
+            username: 'WhereiamL',
+          },
+          committer: {
+            name: 'ChatDisabled',
+            email: '44729807+ChatDisabled@users.noreply.github.com',
+            username: 'ChatDisabled',
+          },
+        }),
+        '!anon',
+        ['chatdisabled'],
+      ),
+    ).toBe(true);
+  });
 });
 
 describe('isMeaningfullyDifferent', () => {
