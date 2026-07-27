@@ -16,6 +16,7 @@ import type {
 } from './types.js';
 
 export const DEFAULT_ACTIVITY_BODY_MAX_LENGTH = 320;
+export const DEFAULT_MAX_TEXT_LENGTH = 4000;
 const FIRST_TIME_ASSOCIATIONS = new Set([
   'FIRST_TIMER',
   'FIRST_TIME_CONTRIBUTOR',
@@ -170,7 +171,7 @@ export function formatAccountList(
 
 export function enforceActivityTextBudget(
   components: ContainerComponent['components'],
-  maxTextLength: number = 4000,
+  maxTextLength: number = DEFAULT_MAX_TEXT_LENGTH,
 ): void {
   let totalLength = components.reduce(
     (total, component) =>

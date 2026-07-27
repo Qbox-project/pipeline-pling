@@ -69,6 +69,9 @@ export const DEFAULT_PULL_REQUEST_SIZE_THRESHOLDS: [number, number, number] = [
   500,
   1000,
 ];
+const TITLE_MAX_LENGTH = 256;
+const BRANCH_LABEL_MAX_LENGTH = 160;
+const TEAM_NAME_MAX_LENGTH = 80;
 
 export function shouldSkipPullRequest(
   payload: PullRequestPayload,
@@ -220,10 +223,10 @@ function buildMetadata(
 
   const headLabel = truncate(
     pullRequest.head.label ?? pullRequest.head.ref,
-    160,
+    BRANCH_LABEL_MAX_LENGTH,
   );
   rows.push(
-    `**Branches:** ${formatInlineCode(headLabel)} → ${formatInlineCode(truncate(pullRequest.base.ref, 160))}`,
+    `**Branches:** ${formatInlineCode(headLabel)} → ${formatInlineCode(truncate(pullRequest.base.ref, BRANCH_LABEL_MAX_LENGTH))}`,
   );
 
   if (details.has('stats')) {
@@ -268,7 +271,7 @@ function buildMetadata(
     );
     const teams = (pullRequest.requested_teams ?? [])
       .slice(0, 5)
-      .map((team) => escapeDiscordMarkdown(truncate(team.name, 80)))
+      .map((team) => escapeDiscordMarkdown(truncate(team.name, TEAM_NAME_MAX_LENGTH)))
       .join(', ');
     const requested = [reviewers, teams].filter(Boolean).join(', ');
     if (requested) {
@@ -340,7 +343,7 @@ export function buildPullRequestMessage(
     components.push({ type: 14, divider: true, spacing: 1 });
     components.push({
       type: 10,
-      content: `### ${escapeDiscordMarkdown(truncate(pullRequest.title, 256))}`,
+      content: `### ${escapeDiscordMarkdown(truncate(pullRequest.title, TITLE_MAX_LENGTH))}`,
     });
 
     if (!compactMode) {

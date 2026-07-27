@@ -8,6 +8,7 @@ import {
   resolveAccentColor,
 } from './color.js';
 import { sendDiscordWebhook } from './discord.js';
+import { DEFAULT_ACTIVITY_BODY_MAX_LENGTH } from './activity.js';
 import {
   buildIssueMessage,
   DEFAULT_ISSUE_ACTIONS,
@@ -49,6 +50,8 @@ const SUPPORTED_EVENTS = new Set([
   'pull_request_target',
   'issues',
 ]);
+const BODY_MAX_LENGTH_MIN = 0;
+const BODY_MAX_LENGTH_MAX = 1000;
 
 function parseAccentColor(eventName: string): number | undefined {
   const accentColorInput = core.getInput('accent-color');
@@ -147,21 +150,24 @@ function parseDetails(
 function parseBodyMaxLength(input: string): number {
   const value = input.trim();
   if (!value) {
-    return 320;
+    return DEFAULT_ACTIVITY_BODY_MAX_LENGTH;
   }
 
   if (!/^-?\d+$/.test(value)) {
     core.warning(
-      `Invalid body-max-length value "${input}"; defaulting to 320.`,
+      `Invalid body-max-length value "${input}"; defaulting to ${DEFAULT_ACTIVITY_BODY_MAX_LENGTH}.`,
     );
-    return 320;
+    return DEFAULT_ACTIVITY_BODY_MAX_LENGTH;
   }
 
   const parsed = Number(value);
-  const clamped = Math.min(Math.max(parsed, 0), 1000);
+  const clamped = Math.min(
+    Math.max(parsed, BODY_MAX_LENGTH_MIN),
+    BODY_MAX_LENGTH_MAX,
+  );
   if (clamped !== parsed) {
     core.warning(
-      `body-max-length value "${input}" is outside 0 to 1000; clamping to ${clamped}.`,
+      `body-max-length value "${input}" is outside ${BODY_MAX_LENGTH_MIN} to ${BODY_MAX_LENGTH_MAX}; clamping to ${clamped}.`,
     );
   }
   return clamped;

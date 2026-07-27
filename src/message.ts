@@ -17,7 +17,7 @@ import {
   resolveRepositoryDisplayName,
   withGitHubAvatarSize,
 } from './github.js';
-import { sanitizeWebhookUsername } from './activity.js';
+import { sanitizeWebhookUsername, DEFAULT_MAX_TEXT_LENGTH } from './activity.js';
 import {
   ANONYMOUS_AVATAR_URL,
   IS_COMPONENTS_V2,
@@ -26,7 +26,6 @@ import {
 const DEFAULT_ANON_KEYWORD = '!anon';
 const DEFAULT_SILENT_KEYWORD = '!silent';
 const DEFAULT_MAX_COMMITS = 10;
-const DEFAULT_MAX_TEXT_LENGTH = 4000;
 const DEFAULT_MAX_TITLE_LENGTH = 72;
 const DEFAULT_MAX_DESCRIPTION_LENGTH = 320;
 const CO_AUTHOR_REGEX = /^Co-authored-by:\s*(.+?)\s*<([^>]+)>\s*$/gim;

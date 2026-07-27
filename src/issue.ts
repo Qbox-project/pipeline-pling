@@ -44,6 +44,9 @@ export const DEFAULT_ISSUE_DETAILS = [
   'milestone',
 ];
 export const SUPPORTED_ISSUE_DETAILS = [...DEFAULT_ISSUE_DETAILS] as const;
+const TITLE_MAX_LENGTH = 256;
+const ISSUE_TYPE_NAME_MAX_LENGTH = 80;
+const MILESTONE_TITLE_MAX_LENGTH = 120;
 const ISSUE_COLORS = {
   open: 0x1f883d,
   closed: 0x8250df,
@@ -127,7 +130,7 @@ function buildMetadata(
   rows.push(`**Author:** ${author}${firstTime}`);
 
   if (details.has('type') && issue.type?.name) {
-    rows.push(`**Type:** ${formatInlineCode(truncate(issue.type.name, 80))}`);
+    rows.push(`**Type:** ${formatInlineCode(truncate(issue.type.name, ISSUE_TYPE_NAME_MAX_LENGTH))}`);
   }
 
   if (details.has('labels') && issue.labels.length > 0) {
@@ -152,7 +155,7 @@ function buildMetadata(
 
   if (details.has('milestone') && issue.milestone) {
     const milestone = escapeDiscordMarkdown(
-      truncate(issue.milestone.title, 120),
+      truncate(issue.milestone.title, MILESTONE_TITLE_MAX_LENGTH),
     );
     rows.push(
       `**Milestone:** ${
@@ -224,7 +227,7 @@ export function buildIssueMessage(
     components.push({ type: 14, divider: true, spacing: 1 });
     components.push({
       type: 10,
-      content: `### ${escapeDiscordMarkdown(truncate(issue.title, 256))}`,
+      content: `### ${escapeDiscordMarkdown(truncate(issue.title, TITLE_MAX_LENGTH))}`,
     });
 
     if (!compactMode) {
