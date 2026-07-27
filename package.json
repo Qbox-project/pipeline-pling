@@ -13,7 +13,7 @@
     "act:test": "node scripts/act-test.mjs"
   },
   "devDependencies": {
-    "@types/node": "^22.15.30",
+    "@types/node": "^24.13.3",
     "esbuild": "^0.25.5",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
