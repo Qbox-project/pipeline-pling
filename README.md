@@ -59,7 +59,7 @@ That is all the action needs. Do not add a checkout step to this notification jo
 
 ## Configuration
 
-All inputs are optional unless marked as required.
+All inputs are optional unless marked as required; `webhook-url` is the only required one. The **Applies to** column shows which events each input affects, since some apply to pushes only and others only to pull request and issue cards.
 
 ### Essentials
 
@@ -74,14 +74,16 @@ All inputs are optional unless marked as required.
 
 ### Filtering
 
-| Input              | Required | Default   | Description                                                                       |
-| ------------------ | -------- | --------- | --------------------------------------------------------------------------------- |
-| `skip-bots`        | No       | `true`    | Skip activity performed by bot accounts.                                          |
-| `silent-keyword`   | No       | `!silent` | Omit a commit when this is the first non-empty line of its commit body.           |
-| `branch-allowlist` | No       | —         | Comma-separated branch names to include. Names use case-sensitive exact matching. |
-| `branch-denylist`  | No       | —         | Comma-separated branch names to exclude. Names use case-sensitive exact matching. |
+| Input              | Applies to | Default   | Description                                                                       |
+| ------------------ | ---------- | --------- | --------------------------------------------------------------------------------- |
+| `skip-bots`        | All events | `true`    | Skip activity performed by bot accounts.                                          |
+| `silent-keyword`   | Pushes     | `!silent` | Omit a commit when this is the first non-empty line of its commit body.           |
+| `branch-allowlist` | Pushes     | —         | Comma-separated branch names to include. Names use case-sensitive exact matching. |
+| `branch-denylist`  | Pushes     | —         | Comma-separated branch names to exclude. Names use case-sensitive exact matching. |
 
 When both branch lists are set, a branch must appear in the allowlist and not appear in the denylist. Empty lists are ignored.
+
+The branch lists filter **pushes only**; they never suppress a pull request or issue card. To restrict pull requests by branch, use `pull-request-base-allowlist` and `pull-request-head-allowlist` below. Issues have no branch, so they can only be filtered by label.
 
 ### Pull request and issue filtering
 
@@ -99,22 +101,22 @@ PR branch patterns are case-sensitive. `*` matches one path segment and `**` mat
 
 ### Appearance
 
-| Input               | Required | Default          | Description                                                                                                      |
-| ------------------- | -------- | ---------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `accent-color`      | No       | Event default | Fallback accent as `#RRGGBB` or `RRGGBB`; pushes otherwise use a repository color and activity cards use semantic colors. |
-| `branch-colors`     | No       | —                | Per-branch colors as `pattern=#RRGGBB` entries separated by commas or newlines. The first matching pattern wins. |
-| `use-sender-avatar` | No       | `true`           | Use the event sender's GitHub avatar as the webhook avatar.                                                      |
-| `use-repo-username` | No       | `true`           | Use the repository name as the webhook username. When the resolved name contains `clyde` (case-insensitive), Discord rejects it, so the action omits the username override and Discord keeps the name configured on the webhook. |
-| `repo-name`         | No       | Repository name  | Override the repository label and webhook username, up to Discord's 80-character limit. The same `clyde` rejection applies to this override. |
-| `hide-links`        | No       | `false`          | Remove generated GitHub links and all action buttons.                                                            |
-| `compact-mode`      | No       | `false`          | Condense push commits and omit secondary PR/issue metadata and body excerpts.                                    |
-| `pull-request-details` | No | `body,labels,reviewers,assignees,stats` | Metadata shown on standard PR cards. |
-| `issue-details` | No | `body,type,labels,assignees,milestone` | Metadata shown on standard issue cards. |
-| `body-max-length` | No | `320` | Maximum PR/issue body excerpt length from `0` to `1000`; `0` hides bodies. Measured before Markdown escaping and quote prefixes are applied. Out-of-range values are clamped. |
-| `pull-request-size-thresholds` | No | `100,500,1000` | Changed-line thresholds for S, M, L, and XL PR badges. |
-| `highlight-first-time-contributors` | No | `true` | Show a first-time-contributor badge from GitHub's author association. |
-| `event-colors` | No | Semantic colors | State colors as `event.action=#RRGGBB`, separated by commas or newlines. |
-| `label-color-priority` | No | — | Ordered labels whose GitHub color overrides the event color. |
+| Input               | Applies to | Default          | Description                                                                                                      |
+| ------------------- | ---------- | ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `accent-color`      | All events | Event default | Fallback accent as `#RRGGBB` or `RRGGBB`; pushes otherwise use a repository color and activity cards use semantic colors. |
+| `branch-colors`     | Pushes     | —                | Per-branch colors as `pattern=#RRGGBB` entries separated by commas or newlines. The first matching pattern wins. |
+| `use-sender-avatar` | All events | `true`           | Use the event sender's GitHub avatar as the webhook avatar.                                                      |
+| `use-repo-username` | All events | `true`           | Use the repository name as the webhook username. When the resolved name contains `clyde` (case-insensitive), Discord rejects it, so the action omits the username override and Discord keeps the name configured on the webhook. |
+| `repo-name`         | All events | Repository name  | Override the repository label and webhook username, up to Discord's 80-character limit. The same `clyde` rejection applies to this override. |
+| `hide-links`        | All events | `false`          | Remove generated GitHub links and all action buttons.                                                            |
+| `compact-mode`      | All events | `false`          | Condense push commits and omit secondary PR/issue metadata and body excerpts.                                    |
+| `pull-request-details` | PRs | `body,labels,reviewers,assignees,stats` | Optional metadata rows on standard PR cards. |
+| `issue-details` | Issues | `body,type,labels,assignees,milestone` | Optional metadata rows on standard issue cards. |
+| `body-max-length` | PRs, issues | `320` | Maximum PR/issue body excerpt length from `0` to `1000`; `0` hides bodies. Measured before Markdown escaping and quote prefixes are applied. Out-of-range values are clamped. |
+| `pull-request-size-thresholds` | PRs | `100,500,1000` | Changed-line thresholds for S, M, L, and XL PR badges. |
+| `highlight-first-time-contributors` | PRs, issues | `true` | Show a first-time-contributor badge from GitHub's author association. |
+| `event-colors` | PRs, issues | Semantic colors | State colors as `event.action=#RRGGBB`, separated by commas or newlines. |
+| `label-color-priority` | PRs, issues | — | Ordered labels whose GitHub color overrides the event color. |
 
 Branch color patterns are case-sensitive. `*` matches one path segment, while `**` can match across segments. A matching `branch-colors` rule takes priority over `accent-color`.
 
@@ -124,12 +126,12 @@ For PRs and issues, color precedence is: first matching `label-color-priority` l
 
 ### Privacy
 
-| Input             | Required | Default | Description                                                                                                |
-| ----------------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------- |
-| `anon-keyword`    | No       | `!anon` | Fully redact a commit when this is the first non-empty line of its commit body.                            |
-| `name-anon-users` | No       | —       | GitHub usernames shown as `Anonymous` while activity details remain visible.                               |
-| `full-anon-users` | No       | —       | GitHub usernames whose commits, pull requests, or issues are fully redacted.                               |
-| `redact-labels`   | No       | —       | Fully redact a PR or issue carrying any listed label.                                                       |
+| Input             | Applies to  | Default | Description                                                                                                |
+| ----------------- | ----------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `anon-keyword`    | Pushes      | `!anon` | Fully redact a commit when this is the first non-empty line of its commit body.                            |
+| `name-anon-users` | All events  | —       | GitHub usernames shown as `Anonymous` while activity details remain visible.                               |
+| `full-anon-users` | All events  | —       | GitHub usernames whose commits, pull requests, or issues are fully redacted.                               |
+| `redact-labels`   | PRs, issues | —       | Fully redact a PR or issue carrying any listed label.                                                       |
 
 Username and privacy-label matching is case-insensitive and ignores empty entries. On PRs and issues, `name-anon-users` masks actors and authors while retaining the activity; `full-anon-users` fully redacts items created by a listed user. Label redaction removes the number, title, body, metadata, links, buttons, and label-derived color. GitHub-controlled content can never ping Discord users or roles.
 
@@ -210,7 +212,7 @@ with:
 
 ### Filter and color branches
 
-Only notify for `main`, `develop`, and two selected fix branches, while giving each branch family its own color:
+Only notify for **pushes** to `main`, `develop`, and two selected fix branches, while giving each branch family its own color:
 
 ```yaml
 with:
@@ -222,7 +224,7 @@ with:
     fix/*=#f97316
 ```
 
-The allowlist uses exact branch names; only `branch-colors` supports glob patterns.
+The allowlist uses exact branch names; only `branch-colors` supports glob patterns. Both inputs affect pushes only, so pull request and issue cards keep arriving from every branch. Add `pull-request-base-allowlist` or `pull-request-head-allowlist` if you want the same restriction there.
 
 ### Customize the notification identity
 
