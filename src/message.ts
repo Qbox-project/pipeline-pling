@@ -97,23 +97,6 @@ export function formatGitHubUser(
   return displayName;
 }
 
-export function isMeaningfullyDifferent(
-  author: GitHubUser,
-  committer: GitHubUser,
-): boolean {
-  const authorUsername = resolveUsername(author);
-  const committerUsername = resolveUsername(committer);
-
-  if (authorUsername && committerUsername) {
-    return authorUsername !== committerUsername;
-  }
-
-  return (
-    author.name.trim().toLowerCase() !== committer.name.trim().toLowerCase() ||
-    author.email.trim().toLowerCase() !== committer.email.trim().toLowerCase()
-  );
-}
-
 export interface ParsedCoAuthor {
   name: string;
   email: string;
@@ -323,9 +306,7 @@ function formatCommitLine(
     repoHtmlUrl,
     hideLinks,
   );
-  const shaText = hideLinks
-    ? `\`${shortSha}\``
-    : formatMarkdownLink(`\`${shortSha}\``, commit.url, hideLinks);
+  const shaText = formatMarkdownLink(`\`${shortSha}\``, commit.url, hideLinks);
 
   if (compactMode) {
     return `${shaText} ${title}`;
@@ -377,13 +358,6 @@ function buildHeader(
       : `**[${senderLabel}](https://github.com/${payload.sender.login})**`;
 
   return `${actor} is pushing ${commitCount} ${commitLabel} to ${branchLabel}`;
-}
-
-function getRepositoryName(
-  payload: PushPayload,
-  repoNameOverride?: string,
-): string {
-  return resolveRepositoryDisplayName(payload.repository, repoNameOverride);
 }
 
 function buildWebhookAvatarUrl(
@@ -599,7 +573,7 @@ export function buildDiscordMessage(
 
   if (useRepoUsername) {
     const username = sanitizeWebhookUsername(
-      getRepositoryName(payload, repoNameOverride),
+      resolveRepositoryDisplayName(payload.repository, repoNameOverride),
     );
     if (username !== undefined) {
       message.username = username;

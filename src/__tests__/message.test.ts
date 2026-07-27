@@ -21,7 +21,6 @@ import {
   isAnonymousCommit,
   isBranchNotificationAllowed,
   isCommitFullyAnonymous,
-  isMeaningfullyDifferent,
   isSilentCommit,
   linkPrReferences,
   parseBranch,
@@ -442,17 +441,6 @@ Co-authored-by: ChatDisabled <44729807+ChatDisabled@users.noreply.github.com>`,
         }),
         '!anon',
         ['chatdisabled'],
-      ),
-    ).toBe(true);
-  });
-});
-
-describe('isMeaningfullyDifferent', () => {
-  it('detects different committer identities', () => {
-    expect(
-      isMeaningfullyDifferent(
-        { name: 'Author', email: 'author@example.com' },
-        { name: 'Committer', email: 'committer@example.com' },
       ),
     ).toBe(true);
   });

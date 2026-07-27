@@ -41,7 +41,7 @@ export interface PushPayload {
   commits: PushCommit[];
   repository: GitHubRepository;
   sender: GitHubAccount;
-  pusher: {
+  pusher?: {
     name: string;
     email?: string;
   };
