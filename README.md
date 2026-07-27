@@ -104,8 +104,8 @@ PR branch patterns are case-sensitive. `*` matches one path segment and `**` mat
 | `accent-color`      | No       | Event default | Fallback accent as `#RRGGBB` or `RRGGBB`; pushes otherwise use a repository color and activity cards use semantic colors. |
 | `branch-colors`     | No       | —                | Per-branch colors as `pattern=#RRGGBB` entries separated by commas or newlines. The first matching pattern wins. |
 | `use-sender-avatar` | No       | `true`           | Use the event sender's GitHub avatar as the webhook avatar.                                                      |
-| `use-repo-username` | No       | `true`           | Use the repository name as the webhook username.                                                                 |
-| `repo-name`         | No       | Repository name  | Override the repository label and webhook username, up to Discord's 80-character limit.                          |
+| `use-repo-username` | No       | `true`           | Use the repository name as the webhook username. When the resolved name contains `clyde` (case-insensitive), Discord rejects it, so the action omits the username override and Discord keeps the name configured on the webhook. |
+| `repo-name`         | No       | Repository name  | Override the repository label and webhook username, up to Discord's 80-character limit. The same `clyde` rejection applies to this override. |
 | `hide-links`        | No       | `false`          | Remove generated GitHub links and all action buttons.                                                            |
 | `compact-mode`      | No       | `false`          | Condense push commits and omit secondary PR/issue metadata and body excerpts.                                    |
 | `pull-request-details` | No | `body,labels,reviewers,assignees,stats` | Metadata shown on standard PR cards. |
@@ -240,6 +240,8 @@ with:
   use-sender-avatar: false
 ```
 
+Discord rejects webhook usernames that contain `clyde` (matched case-insensitively). If the resolved repository name or `repo-name` override would be rejected, Pipeline Pling omits the `username` field and Discord falls back to the name configured on the webhook itself.
+
 ### Silence a commit
 
 Put `!silent` on the first non-empty line after the commit title:
@@ -364,7 +366,7 @@ Choose the level of update control that fits your project:
 
 - `Qbox-project/pipeline-pling@v1` — recommended; follows the latest compatible v1 release.
 - `Qbox-project/pipeline-pling@v1.5.0` — stays on a specific release until you update it manually.
-- `Qbox-project/pipeline-pling@<full-commit-sha>` — pins the exact reviewed code and provides the strongest protection against a tag being moved.
+- `Qbox-project/pipeline-pling@<full-commit-sha>` — pins the exact reviewed build commit and provides the strongest protection against a tag being moved. The SHA must be from a release build commit (the one that includes `dist/index.js`), not a commit from `main`. Resolve one with `git rev-parse v1.5.0`.
 
 GitHub recommends major tags for convenient action versioning and full-length commit SHAs when immutability is required. See GitHub's guidance on [managing custom actions](https://docs.github.com/en/actions/how-tos/create-and-publish-actions/manage-custom-actions) and [secure use of third-party actions](https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions).
 
@@ -381,6 +383,8 @@ If a PR or issue action never starts a workflow, check the workflow's `on.<event
 ### Discord rejected the webhook
 
 Copy a fresh webhook URL from Discord and update `DISCORD_WEBHOOK_URL`. Do not append `/github`. A deleted webhook or a webhook copied with the wrong suffix commonly returns a `401` or `404` response.
+
+If Discord rejects the request because of the webhook username, check whether the repository name or `repo-name` override contains `clyde`. Pipeline Pling omits the username in that case so Discord can use the name configured on the webhook; set `use-repo-username: false` or choose a different `repo-name` if you need an explicit override.
 
 Webhook requests time out after 15 seconds instead of leaving the job waiting indefinitely. If Discord rate-limits a request, the action waits for the requested delay, up to 30 seconds, and retries once. Transient network errors and Discord `5xx` responses retry once after one second. A second failure ends the workflow with the available error details.
 
