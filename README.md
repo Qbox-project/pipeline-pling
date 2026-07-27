@@ -87,7 +87,7 @@ When both branch lists are set, a branch must appear in the allowlist and not ap
 
 | Input | Default | Description |
 | ----- | ------- | ----------- |
-| `pull-request-actions` | `opened,reopened,converted_to_draft,ready_for_review,closed` | Enabled PR lifecycle actions. Add `synchronize` to notify for every new head commit. A `closed` event is rendered as merged or unmerged. |
+| `pull-request-actions` | `opened,reopened,converted_to_draft,ready_for_review,closed` | Enabled PR lifecycle actions. Add `synchronize` to notify for every new head commit. A `closed` event is rendered as merged or closed depending on whether the PR was merged. |
 | `issue-actions` | `opened,reopened,closed` | Enabled issue lifecycle actions. |
 | `pull-request-drafts` | `include` | Use `exclude` to suppress cards while a PR is still a draft; its `ready_for_review` transition remains eligible. |
 | `pull-request-base-allowlist` / `pull-request-base-denylist` | — | Target branch patterns to include or exclude. |
@@ -110,7 +110,7 @@ PR branch patterns are case-sensitive. `*` matches one path segment and `**` mat
 | `compact-mode`      | No       | `false`          | Condense push commits and omit secondary PR/issue metadata and body excerpts.                                    |
 | `pull-request-details` | No | `body,labels,reviewers,assignees,stats` | Metadata shown on standard PR cards. |
 | `issue-details` | No | `body,type,labels,assignees,milestone` | Metadata shown on standard issue cards. |
-| `body-max-length` | No | `320` | Maximum escaped PR/issue body excerpt length from `0` to `1000`; `0` hides bodies. |
+| `body-max-length` | No | `320` | Maximum PR/issue body excerpt length from `0` to `1000`; `0` hides bodies. Measured before Markdown escaping and quote prefixes are applied. Out-of-range values are clamped. |
 | `pull-request-size-thresholds` | No | `100,500,1000` | Changed-line thresholds for S, M, L, and XL PR badges. |
 | `highlight-first-time-contributors` | No | `true` | Show a first-time-contributor badge from GitHub's author association. |
 | `event-colors` | No | Semantic colors | State colors as `event.action=#RRGGBB`, separated by commas or newlines. |
@@ -118,7 +118,9 @@ PR branch patterns are case-sensitive. `*` matches one path segment and `**` mat
 
 Branch color patterns are case-sensitive. `*` matches one path segment, while `**` can match across segments. A matching `branch-colors` rule takes priority over `accent-color`.
 
-For PRs and issues, color precedence is: first matching `label-color-priority` label, the most specific `event-colors` key, `accent-color`, then the semantic default. Supported keys are `pull-request`, `pull-request.opened`, `pull-request.reopened`, `pull-request.draft`, `pull-request.ready`, `pull-request.merged`, `pull-request.closed`, `pull-request.synchronize`, `issue`, `issue.opened`, `issue.reopened`, `issue.closed`, and `issue.not_planned`. Issues closed as not planned default to grey (`#6e7681`).
+`pull-request-details` and `issue-details` control the optional rows only. PR cards always show **Author** and **Branches**; issue cards always show **Author**, plus **Discussion** and **Resolution** when those apply. Use `compact-mode` to drop the metadata block entirely.
+
+For PRs and issues, color precedence is: first matching `label-color-priority` label, the most specific `event-colors` key, `accent-color`, then the semantic default. Supported keys are `pull-request`, `pull-request.opened`, `pull-request.reopened`, `pull-request.draft`, `pull-request.ready`, `pull-request.merged`, `pull-request.closed`, `pull-request.synchronize`, `issue`, `issue.opened`, `issue.reopened`, `issue.closed`, and `issue.not_planned`. Issues closed as not planned default to grey (`#6e7681`) and fall back to `issue.closed` when only that key is set, so an existing closed-issue color keeps applying to them.
 
 ### Privacy
 
@@ -274,7 +276,7 @@ with:
 ```
 
 - `name-anon-users` replaces matching sender, author, and co-author names with `Anonymous`, but leaves the commit visible.
-- `full-anon-users` fully redacts commits authored or co-authored by a matching user.
+- `full-anon-users` fully redacts commits authored, co-authored, or committed by a matching user.
 - If the push sender is on either anonymity list, their profile link is removed and an anonymous avatar is used when sender avatars are enabled.
 - If any commit is fully anonymous, branch and comparison links are removed so the notification cannot reveal the redacted commit indirectly.
 - A commit that is both silent and anonymous is omitted; silence takes precedence.
@@ -287,7 +289,7 @@ with:
   hide-links: true
 ```
 
-The notification keeps its text while removing all hyperlinks and the **View changes** button.
+The notification keeps its text while removing all hyperlinks and every action button: **View changes** on pushes, **View pull request**, **Files changed** and **Checks** on pull requests, and **View issue** on issues.
 
 ### Condense commit lists
 
