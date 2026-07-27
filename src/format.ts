@@ -1,3 +1,17 @@
+export function sliceUtf16Safe(text: string, maxLength: number): string {
+  if (maxLength <= 0) {
+    return '';
+  }
+
+  const sliced = text.slice(0, maxLength);
+  const lastCode = sliced.charCodeAt(sliced.length - 1);
+  if (lastCode >= 0xd800 && lastCode <= 0xdbff) {
+    return sliced.slice(0, -1);
+  }
+
+  return sliced;
+}
+
 export function truncate(text: string, maxLength: number): string {
   if (maxLength <= 0) {
     return '';
@@ -8,10 +22,10 @@ export function truncate(text: string, maxLength: number): string {
   }
 
   if (maxLength <= 3) {
-    return text.slice(0, maxLength);
+    return sliceUtf16Safe(text, maxLength);
   }
 
-  return `${text.slice(0, maxLength - 3)}...`;
+  return `${sliceUtf16Safe(text, maxLength - 3)}...`;
 }
 
 export function escapeDiscordMarkdown(text: string): string {

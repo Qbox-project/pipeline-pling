@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { enforceActivityTextBudget } from '../activity.js';
 import {
   buildIssueMessage,
   getIssueColor,
@@ -266,5 +267,17 @@ describe('buildIssueMessage', () => {
     );
 
     expect(totalLength).toBeLessThanOrEqual(4000);
+  });
+
+  it('does not split emoji surrogate pairs when enforcing the text budget', () => {
+    const components = [{ type: 10 as const, content: '😀😁😂😃😄😅😆😇😈😉' }];
+    enforceActivityTextBudget(components, 5);
+
+    expect(components[0].content).toBe('😀...');
+    expect(components[0].content.length).toBeLessThanOrEqual(5);
+    const lastCode = components[0].content.charCodeAt(
+      components[0].content.length - 1,
+    );
+    expect(lastCode < 0xd800 || lastCode > 0xdbff).toBe(true);
   });
 });

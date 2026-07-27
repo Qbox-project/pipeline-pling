@@ -1,6 +1,7 @@
 import {
   escapeDiscordMarkdown,
   formatMarkdownLink,
+  sliceUtf16Safe,
   truncate,
 } from './format.js';
 import { ANONYMOUS_AVATAR_URL } from './types.js';
@@ -218,7 +219,7 @@ export function enforceActivityTextBudget(
 
     const suffix = targetLength >= 3 ? '...' : '.'.repeat(targetLength);
     const prefixLength = Math.max(0, targetLength - suffix.length);
-    component.content = `${component.content.slice(0, prefixLength)}${suffix}`;
+    component.content = `${sliceUtf16Safe(component.content, prefixLength)}${suffix}`;
     totalLength = maxTextLength;
   }
 }

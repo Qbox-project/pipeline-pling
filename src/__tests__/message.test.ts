@@ -1298,6 +1298,11 @@ describe('helpers', () => {
     expect(truncate('ab', 4)).toBe('ab');
   });
 
+  it('does not split emoji surrogate pairs when truncating', () => {
+    expect(truncate('😀😁😂😃', 3)).toBe('😀');
+    expect(truncate('😀😁😂😃', 5)).toBe('😀...');
+  });
+
   it('extracts commit descriptions without co-author trailers', () => {
     const description = getCommitDescription(`title
 
