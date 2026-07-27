@@ -8,12 +8,14 @@ on:
 
 jobs:
   notify:
-    if: ${{ env.ACT == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Notify Discord
+        # act sets ACT=true. The env context is only available to step-level
+        # conditions, so this guard cannot move up to the job.
+        if: ${{ env.ACT == 'true' }}
         uses: ./
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}

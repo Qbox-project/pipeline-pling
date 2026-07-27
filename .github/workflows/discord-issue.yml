@@ -7,14 +7,15 @@ on:
 
 jobs:
   notify:
-    # The issues event has no branch filter, so this guard is what keeps the
-    # workflow from posting on real repository activity. act sets ACT=true.
-    if: ${{ env.ACT == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Notify Discord
+        # The issues event has no branch filter, so this guard is what keeps the
+        # workflow from posting on real repository activity. act sets ACT=true,
+        # and the env context is only available to step-level conditions.
+        if: ${{ env.ACT == 'true' }}
         uses: ./
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
