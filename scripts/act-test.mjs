@@ -10,7 +10,7 @@ const secretsFile = join(rootDir, ".secrets");
 const workflowsDir = join(rootDir, ".github", "workflows");
 const fixturesDir = join(rootDir, "fixtures");
 
-/** @type {{ label: string; description: string; workflow: string; fixture: string }[]} */
+/** @type {{ label: string; description: string; workflow: string; fixture: string; event?: string }[]} */
 const scenarios = [
   {
     label: "push",
@@ -84,6 +84,34 @@ const scenarios = [
     workflow: "discord-push-branch-colors.yml",
     fixture: "push-branch-fix.json",
   },
+  {
+    label: "pull-request-opened",
+    description: "default inputs — opened pull request card",
+    workflow: "discord-pull-request.yml",
+    fixture: "pull-request-opened.json",
+    event: "pull_request_target",
+  },
+  {
+    label: "pull-request-merged",
+    description: "default inputs — merged pull request card",
+    workflow: "discord-pull-request.yml",
+    fixture: "pull-request-merged.json",
+    event: "pull_request_target",
+  },
+  {
+    label: "issue-opened",
+    description: "default inputs — opened issue card",
+    workflow: "discord-issue.yml",
+    fixture: "issue-opened.json",
+    event: "issues",
+  },
+  {
+    label: "issue-closed",
+    description: "default inputs — closed issue card",
+    workflow: "discord-issue.yml",
+    fixture: "issue-closed.json",
+    event: "issues",
+  },
 ];
 
 function fail(message) {
@@ -103,7 +131,7 @@ function runAct(scenario) {
   const result = spawnSync(
     "act",
     [
-      "push",
+      scenario.event ?? "push",
       "-W",
       workflowFile,
       "--eventpath",
@@ -175,7 +203,7 @@ if (buildResult.status !== 0) {
   fail(`npm run build exited with status ${buildResult.status}`);
 }
 
-console.log("Running Discord push workflow locally with act...");
+console.log("Running Discord workflow scenarios locally with act...");
 console.log(`Secrets: ${secretsFile}`);
 console.log(`Scenarios (${scenarios.length}):`);
 for (const scenario of scenarios) {

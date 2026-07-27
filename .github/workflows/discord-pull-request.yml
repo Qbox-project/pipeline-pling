@@ -1,0 +1,19 @@
+# act-only: default inputs scenario for pull requests (base branch never used in CI)
+name: Discord Pull Request Notification
+
+on:
+  pull_request_target:
+    types: [opened, closed]
+    branches: [__act_only_pull_request__]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Notify Discord
+        uses: ./
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          thread-id: ${{ vars.DISCORD_THREAD_ID }}
