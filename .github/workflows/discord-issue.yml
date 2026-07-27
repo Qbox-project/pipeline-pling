@@ -7,6 +7,9 @@ on:
 
 jobs:
   notify:
+    # The issues event has no branch filter, so this guard is what keeps the
+    # workflow from posting on real repository activity. act sets ACT=true.
+    if: ${{ env.ACT == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
