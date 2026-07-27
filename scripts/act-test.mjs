@@ -7,7 +7,9 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const secretsFile = join(rootDir, ".secrets");
-const workflowsDir = join(rootDir, ".github", "workflows");
+// These workflows deliberately live outside .github/workflows so GitHub never
+// registers them. act is always given an explicit path, so it does not care.
+const workflowsDir = join(rootDir, "scripts", "act-workflows");
 const fixturesDir = join(rootDir, "fixtures");
 
 /** @type {{ label: string; description: string; workflow: string; fixture: string; event?: string }[]} */

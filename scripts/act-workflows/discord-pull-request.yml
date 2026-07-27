@@ -13,8 +13,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Notify Discord
-        # act sets ACT=true. The env context is only available to step-level
-        # conditions, so this guard cannot move up to the job.
+        # Retained as a second layer in case this file is ever moved back under
+        # .github/workflows. act sets ACT=true; the env context is only
+        # available to step-level conditions.
         if: ${{ env.ACT == 'true' }}
         uses: ./
         with:

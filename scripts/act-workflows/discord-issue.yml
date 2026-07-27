@@ -1,0 +1,24 @@
+# act-only: default inputs scenario for issues.
+# The issues event has no branch filter to hide behind, so this file living
+# outside .github/workflows is what keeps GitHub from ever running it.
+name: Discord Issue Notification
+
+on:
+  issues:
+    types: [opened, closed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Notify Discord
+        # Retained as a second layer in case this file is ever moved back under
+        # .github/workflows. act sets ACT=true; the env context is only
+        # available to step-level conditions.
+        if: ${{ env.ACT == 'true' }}
+        uses: ./
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          thread-id: ${{ vars.DISCORD_THREAD_ID }}
