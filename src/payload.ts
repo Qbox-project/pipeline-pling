@@ -3,6 +3,7 @@ import type {
   GitHubRepository,
   IssuesPayload,
   PullRequestPayload,
+  PushPayload,
 } from './types.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -54,6 +55,31 @@ function isAccounts(value: unknown): value is GitHubAccount[] {
 
 function isOptionalNumber(value: unknown): boolean {
   return value === undefined || typeof value === 'number';
+}
+
+function isPushCommit(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.message) &&
+    isString(value.url) &&
+    isRecord(value.author) &&
+    isString(value.author.name) &&
+    isString(value.author.email) &&
+    (value.author.username === undefined || isString(value.author.username))
+  );
+}
+
+export function isPushPayload(value: unknown): value is PushPayload {
+  return (
+    isRecord(value) &&
+    isString(value.ref) &&
+    isString(value.compare) &&
+    isRepository(value.repository) &&
+    isAccount(value.sender) &&
+    Array.isArray(value.commits) &&
+    value.commits.every(isPushCommit)
+  );
 }
 
 export function isPullRequestPayload(

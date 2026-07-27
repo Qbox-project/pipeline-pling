@@ -34,7 +34,7 @@ import {
   SUPPORTED_PULL_REQUEST_ACTIONS,
   SUPPORTED_PULL_REQUEST_DETAILS,
 } from './pull-request.js';
-import { isIssuesPayload, isPullRequestPayload } from './payload.js';
+import { isIssuesPayload, isPullRequestPayload, isPushPayload } from './payload.js';
 import type {
   IssuesPayload,
   PullRequestPayload,
@@ -451,7 +451,13 @@ export async function run(): Promise<void> {
     return;
   }
 
-  await runPush(github.context.payload as unknown as PushPayload, inputs);
+  const payload: unknown = github.context.payload;
+  if (!isPushPayload(payload)) {
+    core.warning('Push event payload is missing required fields; skipping.');
+    return;
+  }
+
+  await runPush(payload, inputs);
 }
 
 if (require.main === module) {

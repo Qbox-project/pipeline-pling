@@ -30,9 +30,9 @@ export interface PushCommit {
   id: string;
   message: string;
   url: string;
-  timestamp: string;
+  timestamp?: string;
   author: GitHubUser;
-  committer: GitHubUser;
+  committer?: GitHubUser;
 }
 
 export interface PushPayload {

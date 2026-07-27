@@ -257,6 +257,7 @@ describe('run', () => {
     ['pull_request', 'Pull request'],
     ['pull_request_target', 'Pull request'],
     ['issues', 'Issue'],
+    ['push', 'Push'],
   ])('skips malformed %s payloads safely', async (eventName, label) => {
     mocks.context.eventName = eventName;
     mocks.context.payload = { action: 'opened' };
@@ -268,6 +269,7 @@ describe('run', () => {
     );
     expect(mocks.buildPullRequestMessage).not.toHaveBeenCalled();
     expect(mocks.buildIssueMessage).not.toHaveBeenCalled();
+    expect(mocks.buildDiscordMessage).not.toHaveBeenCalled();
     expect(mocks.sendDiscordWebhook).not.toHaveBeenCalled();
   });
 
