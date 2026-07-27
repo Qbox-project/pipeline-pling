@@ -1253,6 +1253,24 @@ describe('helpers', () => {
     expect(truncate('x'.repeat(80), 72)).toHaveLength(72);
   });
 
+  it.each([0, 1, 2, 3, 4])(
+    'never returns a string longer than maxLength %i',
+    (maxLength) => {
+      const text = 'abcdefghij';
+      const result = truncate(text, maxLength);
+      expect(result.length).toBeLessThanOrEqual(maxLength);
+    },
+  );
+
+  it('handles short length limits without slicing from the end', () => {
+    expect(truncate('abcdefghij', 0)).toBe('');
+    expect(truncate('abcdefghij', 1)).toBe('a');
+    expect(truncate('abcdefghij', 2)).toBe('ab');
+    expect(truncate('abcdefghij', 3)).toBe('abc');
+    expect(truncate('abcdefghij', 4)).toBe('a...');
+    expect(truncate('ab', 4)).toBe('ab');
+  });
+
   it('extracts commit descriptions without co-author trailers', () => {
     const description = getCommitDescription(`title
 
