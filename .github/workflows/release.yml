@@ -61,5 +61,12 @@ jobs:
 
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
           MAJOR_TAG="v${PACKAGE_VERSION%%.*}"
+          NEWEST_TAG="$(git tag --list "${MAJOR_TAG}.*" --sort=-v:refname | head -n1)"
+
+          if [[ "$RELEASE_TAG" != "$NEWEST_TAG" ]]; then
+            echo "::notice::Leaving ${MAJOR_TAG} unchanged; newest release in this major series is ${NEWEST_TAG}, not ${RELEASE_TAG}."
+            exit 0
+          fi
+
           git tag -f "$MAJOR_TAG"
           git push origin "$MAJOR_TAG" --force
