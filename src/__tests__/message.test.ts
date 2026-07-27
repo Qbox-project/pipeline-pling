@@ -2,9 +2,16 @@ import { describe, expect, it } from 'vitest';
 
 import { colorFromRepoName } from '../color.js';
 import {
+  escapeDiscordMarkdown,
+  truncate,
+} from '../format.js';
+import {
+  parseBranchList,
+  parseUsernameList,
+} from '../inputs.js';
+import {
   buildDiscordMessage,
   buildBranchUrl,
-  escapeDiscordMarkdown,
   filterSilentCommits,
   formatCommitAttribution,
   formatCommitTitle,
@@ -18,12 +25,9 @@ import {
   isSilentCommit,
   linkPrReferences,
   parseBranch,
-  parseBranchList,
   parseCoAuthors,
-  parseUsernameList,
   resolveUsername,
   shouldSkipPush,
-  truncate,
 } from '../message.js';
 import { ANONYMOUS_AVATAR_URL } from '../types.js';
 import type { PushCommit, PushPayload } from '../types.js';

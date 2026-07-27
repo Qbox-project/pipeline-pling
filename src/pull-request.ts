@@ -10,7 +10,6 @@ import {
   isFirstTimeContributor,
   normalizeUsernames,
   resolveActivityAvatar,
-  resolveRepositoryName,
   sanitizeBody,
   sanitizeWebhookUsername,
 } from './activity.js';
@@ -24,6 +23,7 @@ import {
   formatMarkdownLink,
   truncate,
 } from './format.js';
+import { resolveRepositoryDisplayName } from './github.js';
 import {
   IS_COMPONENTS_V2,
 } from './types.js';
@@ -69,13 +69,6 @@ export const DEFAULT_PULL_REQUEST_SIZE_THRESHOLDS: [number, number, number] = [
   500,
   1000,
 ];
-
-export function parseActionList(input: string): string[] {
-  return input
-    .split(',')
-    .map((entry) => entry.trim().toLowerCase())
-    .filter(Boolean);
-}
 
 export function shouldSkipPullRequest(
   payload: PullRequestPayload,
@@ -413,7 +406,7 @@ export function buildPullRequestMessage(
 
   if (useRepoUsername) {
     const username = sanitizeWebhookUsername(
-      resolveRepositoryName(payload, options.repoName),
+      resolveRepositoryDisplayName(payload.repository, options.repoName),
     );
     if (username !== undefined) {
       message.username = username;

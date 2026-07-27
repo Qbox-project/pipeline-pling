@@ -4,6 +4,10 @@ import {
   sliceUtf16Safe,
   truncate,
 } from './format.js';
+import {
+  buildGitHubAvatarUrl,
+  withGitHubAvatarSize,
+} from './github.js';
 import { ANONYMOUS_AVATAR_URL } from './types.js';
 import type {
   ContainerComponent,
@@ -11,8 +15,6 @@ import type {
   GitHubRepository,
 } from './types.js';
 
-const REPOSITORY_NAME_MAX_LENGTH = 80;
-const GITHUB_AVATAR_SIZE = 256;
 export const DEFAULT_ACTIVITY_BODY_MAX_LENGTH = 320;
 const FIRST_TIME_ASSOCIATIONS = new Set([
   'FIRST_TIMER',
@@ -98,22 +100,6 @@ export function formatAccount(
   );
 }
 
-export function resolveRepositoryName(
-  payload: ActivityPayloadBase,
-  repoName?: string,
-): string {
-  const override = repoName?.trim();
-  if (override) {
-    return truncate(override, REPOSITORY_NAME_MAX_LENGTH);
-  }
-
-  const name =
-    payload.repository.name ??
-    payload.repository.full_name.split('/').at(-1) ??
-    payload.repository.full_name;
-  return truncate(name, REPOSITORY_NAME_MAX_LENGTH);
-}
-
 // Discord rejects webhook usernames containing "clyde". Docs also list
 // "discord", but that is not enforced for webhooks — do not reject it.
 export function sanitizeWebhookUsername(
@@ -125,25 +111,6 @@ export function sanitizeWebhookUsername(
   }
 
   return trimmed;
-}
-
-function withAvatarSize(avatarUrl: string): string {
-  try {
-    const url = new URL(avatarUrl);
-    if (url.hostname === 'avatars.githubusercontent.com') {
-      url.searchParams.set('s', String(GITHUB_AVATAR_SIZE));
-      return url.toString();
-    }
-
-    if (url.hostname === 'github.com' && url.pathname.endsWith('.png')) {
-      url.searchParams.set('size', String(GITHUB_AVATAR_SIZE));
-      return url.toString();
-    }
-  } catch {
-    return avatarUrl;
-  }
-
-  return avatarUrl;
 }
 
 export function resolveActivityAvatar(
@@ -158,9 +125,8 @@ export function resolveActivityAvatar(
     return ANONYMOUS_AVATAR_URL;
   }
 
-  return withAvatarSize(
-    payload.sender.avatar_url ??
-      `https://github.com/${payload.sender.login}.png?size=${GITHUB_AVATAR_SIZE}`,
+  return withGitHubAvatarSize(
+    payload.sender.avatar_url ?? buildGitHubAvatarUrl(payload.sender.login),
   );
 }
 

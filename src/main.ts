@@ -17,11 +17,14 @@ import {
   SUPPORTED_ISSUE_DETAILS,
 } from './issue.js';
 import {
+  parseActionList,
+  parseBranchList,
+  parseUsernameList,
+} from './inputs.js';
+import {
   buildDiscordMessage,
   filterSilentCommits,
   parseBranch,
-  parseBranchList,
-  parseUsernameList,
   shouldSkipPush,
 } from './message.js';
 import {
@@ -29,7 +32,6 @@ import {
   DEFAULT_PULL_REQUEST_DETAILS,
   DEFAULT_PULL_REQUEST_SIZE_THRESHOLDS,
   DEFAULT_PULL_REQUEST_ACTIONS,
-  parseActionList,
   shouldSkipPullRequest,
   SUPPORTED_PULL_REQUEST_ACTIONS,
   SUPPORTED_PULL_REQUEST_DETAILS,

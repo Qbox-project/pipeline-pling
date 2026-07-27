@@ -10,7 +10,6 @@ import {
   isFirstTimeContributor,
   normalizeUsernames,
   resolveActivityAvatar,
-  resolveRepositoryName,
   sanitizeBody,
   sanitizeWebhookUsername,
 } from './activity.js';
@@ -21,6 +20,7 @@ import {
   formatMarkdownLink,
   truncate,
 } from './format.js';
+import { resolveRepositoryDisplayName } from './github.js';
 import { IS_COMPONENTS_V2 } from './types.js';
 import type {
   BuildIssueMessageOptions,
@@ -291,7 +291,7 @@ export function buildIssueMessage(
 
   if (useRepoUsername) {
     const username = sanitizeWebhookUsername(
-      resolveRepositoryName(payload, options.repoName),
+      resolveRepositoryDisplayName(payload.repository, options.repoName),
     );
     if (username !== undefined) {
       message.username = username;

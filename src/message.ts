@@ -12,6 +12,11 @@ import {
   formatMarkdownLink,
   truncate,
 } from './format.js';
+import {
+  buildGitHubAvatarUrl,
+  resolveRepositoryDisplayName,
+  withGitHubAvatarSize,
+} from './github.js';
 import { sanitizeWebhookUsername } from './activity.js';
 import {
   ANONYMOUS_AVATAR_URL,
@@ -24,8 +29,6 @@ const DEFAULT_MAX_COMMITS = 10;
 const DEFAULT_MAX_TEXT_LENGTH = 4000;
 const DEFAULT_MAX_TITLE_LENGTH = 72;
 const DEFAULT_MAX_DESCRIPTION_LENGTH = 320;
-const DISCORD_WEBHOOK_USERNAME_MAX_LENGTH = 80;
-const GITHUB_AVATAR_SIZE = 256;
 const CO_AUTHOR_REGEX = /^Co-authored-by:\s*(.+?)\s*<([^>]+)>\s*$/gim;
 const NOREPLY_EMAIL_REGEX = /^(?:\d+\+)?([^@]+)@users\.noreply\.github\.com$/i;
 const GITHUB_USERNAME_REGEX = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
@@ -52,21 +55,6 @@ export function resolveUsername(user: GitHubUser): string | undefined {
   const match = user.email.match(NOREPLY_EMAIL_REGEX);
   const username = match?.[1];
   return username && GITHUB_USERNAME_REGEX.test(username) ? username : undefined;
-}
-
-export function parseUsernameList(input: string): string[] {
-  return input
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-    .map((entry) => entry.toLowerCase());
-}
-
-export function parseBranchList(input: string): string[] {
-  return input
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter(Boolean);
 }
 
 function isUserInAnonList(user: GitHubUser, anonUsers: string[]): boolean {
@@ -165,12 +153,6 @@ export function getCommitDescription(message: string): string {
     .trim();
 }
 
-export {
-  escapeDiscordMarkdown,
-  formatMarkdownLink,
-  truncate,
-} from './format.js';
-
 export function linkPrReferences(
   title: string,
   repoHtmlUrl: string,
@@ -221,7 +203,7 @@ export function formatCommitTitle(
   );
 }
 
-export function isAnonymousCommit(message: string, anonKeyword: string): boolean {
+function hasLeadingBodyKeyword(message: string, keyword: string): boolean {
   const lines = message.split(/\r?\n/);
 
   for (let index = 1; index < lines.length; index++) {
@@ -230,25 +212,18 @@ export function isAnonymousCommit(message: string, anonKeyword: string): boolean
       continue;
     }
 
-    return trimmedLine === anonKeyword;
+    return trimmedLine === keyword;
   }
 
   return false;
 }
 
+export function isAnonymousCommit(message: string, anonKeyword: string): boolean {
+  return hasLeadingBodyKeyword(message, anonKeyword);
+}
+
 export function isSilentCommit(message: string, silentKeyword: string): boolean {
-  const lines = message.split(/\r?\n/);
-
-  for (let index = 1; index < lines.length; index++) {
-    const trimmedLine = lines[index].trim();
-    if (trimmedLine === '') {
-      continue;
-    }
-
-    return trimmedLine === silentKeyword;
-  }
-
-  return false;
+  return hasLeadingBodyKeyword(message, silentKeyword);
 }
 
 export function filterSilentCommits(
@@ -370,22 +345,6 @@ function formatCommitLine(
   return `${shaText} ${title}\n${attributionText}${descriptionText}`;
 }
 
-function resolveRepositoryDisplayName(
-  payload: PushPayload,
-  repoNameOverride?: string,
-): string {
-  if (repoNameOverride?.trim()) {
-    return truncate(repoNameOverride.trim(), DISCORD_WEBHOOK_USERNAME_MAX_LENGTH);
-  }
-
-  const repoName =
-    payload.repository.name ??
-    payload.repository.full_name.split('/').at(-1) ??
-    payload.repository.full_name;
-
-  return truncate(repoName, DISCORD_WEBHOOK_USERNAME_MAX_LENGTH);
-}
-
 function buildHeader(
   payload: PushPayload,
   branch: string,
@@ -397,7 +356,7 @@ function buildHeader(
   hideLinks: boolean = false,
 ): string {
   const repo = repoNameOverride?.trim()
-    ? resolveRepositoryDisplayName(payload, repoNameOverride)
+    ? resolveRepositoryDisplayName(payload.repository, repoNameOverride)
     : payload.repository.full_name;
   const branchUrl = buildBranchUrl(payload.repository.html_url, branch);
   const branchText = formatInlineCode(`${repo}/${branch}`);
@@ -420,34 +379,11 @@ function buildHeader(
   return `${actor} is pushing ${commitCount} ${commitLabel} to ${branchLabel}`;
 }
 
-function withGitHubAvatarSize(avatarUrl: string): string {
-  try {
-    const url = new URL(avatarUrl);
-    if (url.hostname === 'avatars.githubusercontent.com') {
-      url.searchParams.set('s', String(GITHUB_AVATAR_SIZE));
-      return url.toString();
-    }
-
-    if (url.hostname === 'github.com' && url.pathname.endsWith('.png')) {
-      url.searchParams.set('size', String(GITHUB_AVATAR_SIZE));
-      return url.toString();
-    }
-  } catch {
-    return avatarUrl;
-  }
-
-  return avatarUrl;
-}
-
-function buildGitHubAvatarUrl(login: string): string {
-  return `https://github.com/${login}.png?size=${GITHUB_AVATAR_SIZE}`;
-}
-
 function getRepositoryName(
   payload: PushPayload,
   repoNameOverride?: string,
 ): string {
-  return resolveRepositoryDisplayName(payload, repoNameOverride);
+  return resolveRepositoryDisplayName(payload.repository, repoNameOverride);
 }
 
 function buildWebhookAvatarUrl(

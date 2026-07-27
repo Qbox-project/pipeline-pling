@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { parseActionList } from '../inputs.js';
 import {
   buildPullRequestMessage,
   getPullRequestColor,
-  parseActionList,
   shouldSkipPullRequest,
 } from '../pull-request.js';
 import { ANONYMOUS_AVATAR_URL } from '../types.js';
