@@ -137,20 +137,24 @@ Username and privacy-label matching is case-insensitive and ignores empty entrie
 
 ## Common recipes
 
+Unless a recipe shows a full workflow, it is a fragment: merge the `with:` entries into the `with:` block of the Quick start workflow above. A bare `with:` block is not a valid workflow file on its own.
+
 ### Choose lifecycle activity
 
 GitHub's `on.<event>.types` decides when a runner starts. The action inputs are a second, defensive filter. Keep both aligned:
 
 ```yaml
 on:
+  push:
   pull_request_target:
     types: [opened, reopened, ready_for_review, closed, synchronize]
   issues:
     types: [opened, reopened, closed]
 
+permissions: {}
+
 jobs:
   notify-discord:
-    permissions: {}
     runs-on: ubuntu-latest
     steps:
       - uses: Qbox-project/pipeline-pling@v1
@@ -158,6 +162,8 @@ jobs:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
           pull-request-actions: opened,reopened,ready_for_review,closed,synchronize
 ```
+
+Dropping an event from `on:` disables it entirely, so keep `push:` listed unless you genuinely want no push notifications.
 
 ### Route activity to separate Discord destinations
 
