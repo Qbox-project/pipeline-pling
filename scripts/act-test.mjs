@@ -119,6 +119,28 @@ function fail(message) {
   process.exit(1);
 }
 
+function selectScenarios(filters) {
+  if (filters.length === 0) {
+    return scenarios;
+  }
+
+  const selected = scenarios.filter((scenario) =>
+    filters.some((filter) => scenario.label.includes(filter)),
+  );
+
+  if (selected.length === 0) {
+    fail(
+      [
+        `no scenario label matched ${filters.join(", ")}.`,
+        "Available labels:",
+        ...scenarios.map((scenario) => `  ${scenario.label}`),
+      ].join("\n"),
+    );
+  }
+
+  return selected;
+}
+
 function runAct(scenario) {
   const workflowFile = join(workflowsDir, scenario.workflow);
   const fixturePath = join(fixturesDir, scenario.fixture);
@@ -171,7 +193,9 @@ if (!existsSync(secretsFile)) {
   );
 }
 
-for (const scenario of scenarios) {
+const selectedScenarios = selectScenarios(process.argv.slice(2));
+
+for (const scenario of selectedScenarios) {
   const workflowFile = join(workflowsDir, scenario.workflow);
   const fixturePath = join(fixturesDir, scenario.fixture);
 
@@ -205,12 +229,12 @@ if (buildResult.status !== 0) {
 
 console.log("Running Discord workflow scenarios locally with act...");
 console.log(`Secrets: ${secretsFile}`);
-console.log(`Scenarios (${scenarios.length}):`);
-for (const scenario of scenarios) {
+console.log(`Scenarios (${selectedScenarios.length}):`);
+for (const scenario of selectedScenarios) {
   console.log(`  - ${scenario.label}: ${scenario.description}`);
 }
 
-for (const scenario of scenarios) {
+for (const scenario of selectedScenarios) {
   runAct(scenario);
 }
 
