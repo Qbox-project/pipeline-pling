@@ -301,6 +301,39 @@ with:
 
 Compact mode includes every commit that fits within Discord's message limit; if the list is too long, the notification shows how many additional commits were omitted.
 
+## Pull request and issue cards
+
+Each card below is a real notification for public [qbx_core](https://github.com/Qbox-project/qbx_core) activity, so you can open the linked pull request or issue and compare it against what Discord received.
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Pull request opened</strong><br>
+      <img src="screenshots/pull-request-opened.png" width="420" alt="Discord notification for an opened pull request showing the author, the source and target branches, diff stats with an S size badge, and a body excerpt">
+    </td>
+    <td align="center">
+      <strong>Pull request merged</strong><br>
+      <img src="screenshots/pull-request-merged.png" width="420" alt="Discord notification for a merged pull request showing a purple accent, the user who merged it, diff stats with an L size badge, and the requested reviewer">
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Issue opened</strong><br>
+      <img src="screenshots/issue-opened.png" width="420" alt="Discord notification for an opened issue showing a green accent, the author, the bug and need repro labels, and a body excerpt">
+    </td>
+    <td align="center">
+      <strong>Issue closed as completed</strong><br>
+      <img src="screenshots/issue-closed.png" width="420" alt="Discord notification for a completed issue showing a purple accent and a completed resolution line">
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <strong>Issue closed as not planned</strong><br>
+      <img src="screenshots/issue-not-planned.png" width="520" alt="Discord notification for an issue closed as not planned showing a grey accent, the comment count, and a not planned resolution line">
+    </td>
+  </tr>
+</table>
+
 ## More examples
 
 <table>
